@@ -342,3 +342,26 @@ test('power chord shapes allow 5-chord qualities and playable power shapes', asy
     assert.ok(candidates.every((shape) => shape.categories.includes('power')));
   }
 });
+
+test('generateProgression does not always collapse to power-chord qualities when power shapes are enabled', async () => {
+  const library = await loadLibrary();
+  const state = {
+    keyLocked: false,
+    keyRoot: 0,
+    modePreference: 'auto',
+    enabledShapeTypes: new Set(['open', 'barre', 'triad', 'power']),
+    enabledFlavorOptions: new Set(['seventh'])
+  };
+
+  const qualities = new Set();
+  for (let index = 0; index < 25; index += 1) {
+    const progression = generateProgression(state, library);
+    progression.chords.forEach((chord) => qualities.add(chord.quality));
+  }
+
+  assert.ok(qualities.has('5'), 'Expected power chords to remain available');
+  assert.ok(
+    qualities.has('maj') || qualities.has('min') || qualities.has('7') || qualities.has('maj7') || qualities.has('min7'),
+    'Expected non-power chord qualities to appear across repeated generations'
+  );
+});

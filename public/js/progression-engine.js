@@ -172,7 +172,10 @@ function selectDeterministicChoice(playableChoices, baseChord, enabledFlavorOpti
 }
 
 function finalizeChord(chord) {
-  return buildChordDefinition(chord.rootPitchClass, chord.mode, chord.degree, chord.quality);
+  return {
+    ...buildChordDefinition(chord.rootPitchClass, chord.mode, chord.degree, chord.quality),
+    weight: chord.weight
+  };
 }
 
 function buildBaseChords(rootPitchClass, mode, template) {
