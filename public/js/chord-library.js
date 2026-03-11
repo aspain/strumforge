@@ -1,0 +1,363 @@
+import { buildChordId, formatChordLabel, normalizePitchClass } from './music-theory.js';
+
+const OPEN_STRING_PITCHES = [4, 9, 2, 7, 11, 4];
+
+function intersectsRequiredCategories(shapeCategories, enabledCategories) {
+  return shapeCategories.every((category) => enabledCategories.has(category));
+}
+
+function cloneShape(shape, chordId, chordLabel) {
+  return {
+    ...shape,
+    chordId,
+    chordLabel,
+    frets: [...shape.frets],
+    fingers: [...shape.fingers],
+    barres: (shape.barres || []).map((barre) => ({ ...barre })),
+    categories: [...shape.categories]
+  };
+}
+
+function computeBaseFret(frets) {
+  const fretted = frets.filter((fret) => fret > 0);
+  if (!fretted.length) return 1;
+  const minFret = Math.min(...fretted);
+  return minFret > 4 ? minFret : 1;
+}
+
+function buildMovableShape({
+  id,
+  pitchClass,
+  quality,
+  label,
+  frets,
+  fingers,
+  barres,
+  categories,
+  difficulty,
+  canonicalRank,
+  positionScore
+}) {
+  return {
+    id,
+    chordId: buildChordId(pitchClass, quality),
+    chordLabel: formatChordLabel(pitchClass, quality),
+    label,
+    frets,
+    fingers,
+    barres,
+    baseFret: computeBaseFret(frets),
+    categories,
+    difficulty,
+    canonicalRank,
+    positionScore
+  };
+}
+
+function rootFretForString(rootPitchClass, stringIndex) {
+  return (normalizePitchClass(rootPitchClass) - OPEN_STRING_PITCHES[stringIndex] + 12) % 12;
+}
+
+function makeSixthStringBarre(rootPitchClass, quality) {
+  const rootFret = rootFretForString(rootPitchClass, 0);
+  if (rootFret === 0 && (quality === 'maj' || quality === 'min' || quality === '7' || quality === 'min7' || quality === 'maj7')) {
+    return null;
+  }
+
+  const configs = {
+    maj: {
+      frets: [rootFret, rootFret + 2, rootFret + 2, rootFret + 1, rootFret, rootFret],
+      fingers: [1, 3, 4, 2, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'E-shape barre',
+      categories: ['barre'],
+      difficulty: 3,
+      canonicalRank: 14,
+      positionScore: rootFret || 1
+    },
+    min: {
+      frets: [rootFret, rootFret + 2, rootFret + 2, rootFret, rootFret, rootFret],
+      fingers: [1, 3, 4, 1, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'Em-shape barre',
+      categories: ['barre'],
+      difficulty: 3,
+      canonicalRank: 15,
+      positionScore: rootFret || 1
+    },
+    '7': {
+      frets: [rootFret, rootFret + 2, rootFret, rootFret + 1, rootFret, rootFret],
+      fingers: [1, 3, 1, 2, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'E7-shape barre',
+      categories: ['barre', 'seventh'],
+      difficulty: 3,
+      canonicalRank: 18,
+      positionScore: rootFret || 1
+    },
+    min7: {
+      frets: [rootFret, rootFret + 2, rootFret, rootFret, rootFret, rootFret],
+      fingers: [1, 3, 1, 1, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'Em7-shape barre',
+      categories: ['barre', 'seventh'],
+      difficulty: 3,
+      canonicalRank: 19,
+      positionScore: rootFret || 1
+    },
+    maj7: {
+      frets: [rootFret, rootFret + 2, rootFret + 1, rootFret + 1, rootFret, rootFret],
+      fingers: [1, 4, 2, 3, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'Emaj7-shape barre',
+      categories: ['barre', 'seventh'],
+      difficulty: 4,
+      canonicalRank: 21,
+      positionScore: rootFret || 1
+    },
+    '5': {
+      frets: [rootFret, rootFret + 2, rootFret + 2, -1, -1, -1],
+      fingers: [1, 3, 4, 0, 0, 0],
+      barres: [],
+      label: 'Sixth-string power',
+      categories: ['power'],
+      difficulty: 2,
+      canonicalRank: 24,
+      positionScore: rootFret || 1
+    }
+  };
+
+  const config = configs[quality];
+  if (!config) return null;
+  return buildMovableShape({
+    id: `${buildChordId(rootPitchClass, quality)}-sixth-root`,
+    pitchClass: rootPitchClass,
+    quality,
+    ...config
+  });
+}
+
+function makeFifthStringBarre(rootPitchClass, quality) {
+  const rootFret = rootFretForString(rootPitchClass, 1);
+  if (rootFret === 0 && (quality === 'maj' || quality === 'min' || quality === '7' || quality === 'min7' || quality === 'maj7')) {
+    return null;
+  }
+
+  const configs = {
+    maj: {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 2, rootFret + 2, rootFret],
+      fingers: [0, 1, 2, 3, 4, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'A-shape barre',
+      categories: ['barre'],
+      difficulty: 3,
+      canonicalRank: 13,
+      positionScore: rootFret || 1
+    },
+    min: {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 2, rootFret + 1, rootFret],
+      fingers: [0, 1, 3, 4, 2, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'Am-shape barre',
+      categories: ['barre'],
+      difficulty: 3,
+      canonicalRank: 16,
+      positionScore: rootFret || 1
+    },
+    '7': {
+      frets: [-1, rootFret, rootFret + 2, rootFret, rootFret + 2, rootFret],
+      fingers: [0, 1, 3, 1, 4, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'A7-shape barre',
+      categories: ['barre', 'seventh'],
+      difficulty: 4,
+      canonicalRank: 17,
+      positionScore: rootFret || 1
+    },
+    min7: {
+      frets: [-1, rootFret, rootFret + 2, rootFret, rootFret + 1, rootFret],
+      fingers: [0, 1, 4, 1, 2, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'Am7-shape barre',
+      categories: ['barre', 'seventh'],
+      difficulty: 4,
+      canonicalRank: 20,
+      positionScore: rootFret || 1
+    },
+    maj7: {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 1, rootFret + 2, rootFret],
+      fingers: [0, 1, 3, 2, 4, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'Amaj7-shape barre',
+      categories: ['barre', 'seventh'],
+      difficulty: 4,
+      canonicalRank: 22,
+      positionScore: rootFret || 1
+    },
+    '5': {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 2, -1, -1],
+      fingers: [0, 1, 3, 4, 0, 0],
+      barres: [],
+      label: 'Fifth-string power',
+      categories: ['power'],
+      difficulty: 2,
+      canonicalRank: 23,
+      positionScore: rootFret || 1
+    }
+  };
+
+  const config = configs[quality];
+  if (!config) return null;
+  return buildMovableShape({
+    id: `${buildChordId(rootPitchClass, quality)}-fifth-root`,
+    pitchClass: rootPitchClass,
+    quality,
+    ...config
+  });
+}
+
+export function hydrateChordLibrary(rawData) {
+  return {
+    openShapes: rawData.openShapes.map((shape) => ({
+      ...shape,
+      chordId: buildChordId(shape.pitchClass, shape.quality),
+      chordLabel: formatChordLabel(shape.pitchClass, shape.quality)
+    }))
+  };
+}
+
+export async function loadChordLibrary() {
+  const response = await fetch(new URL('../data/chord-shapes.json', import.meta.url));
+  if (!response.ok) throw new Error('Failed to load chord data');
+  const rawData = await response.json();
+  return hydrateChordLibrary(rawData);
+}
+
+function compareShapes(a, b) {
+  return (
+    a.canonicalRank - b.canonicalRank ||
+    a.difficulty - b.difficulty ||
+    a.positionScore - b.positionScore ||
+    a.label.localeCompare(b.label)
+  );
+}
+
+export function getCandidateShapesForChord(chord, library, enabledCategories) {
+  const enabled = enabledCategories instanceof Set ? enabledCategories : new Set(enabledCategories);
+  const candidates = [];
+
+  for (const shape of library.openShapes) {
+    if (shape.pitchClass !== chord.pitchClass || shape.quality !== chord.quality) continue;
+    if (!intersectsRequiredCategories(shape.categories, enabled)) continue;
+    candidates.push(cloneShape(shape, chord.id, chord.label));
+  }
+
+  const movableFactories = [makeFifthStringBarre, makeSixthStringBarre];
+  for (const buildShape of movableFactories) {
+    const shape = buildShape(chord.pitchClass, chord.quality);
+    if (!shape) continue;
+    if (!intersectsRequiredCategories(shape.categories, enabled)) continue;
+    candidates.push(shape);
+  }
+
+  return candidates.sort(compareShapes);
+}
+
+export function getPlayableChordChoices(chordChoices, library, enabledCategories) {
+  return chordChoices
+    .map((choice) => ({
+      ...choice,
+      candidates: getCandidateShapesForChord(choice, library, enabledCategories)
+    }))
+    .filter((choice) => choice.candidates.length);
+}
+
+function averageFret(shape) {
+  const fretted = shape.frets.filter((fret) => fret > 0);
+  if (!fretted.length) return 0;
+  return fretted.reduce((sum, fret) => sum + fret, 0) / fretted.length;
+}
+
+function countOpenStrings(shape) {
+  return shape.frets.filter((fret) => fret === 0).length;
+}
+
+function transitionCost(prevShape, nextShape) {
+  const prevAvg = averageFret(prevShape);
+  const nextAvg = averageFret(nextShape);
+  const prevBase = prevShape.baseFret || 1;
+  const nextBase = nextShape.baseFret || 1;
+  const openBonus = Math.min(countOpenStrings(prevShape), countOpenStrings(nextShape)) * 0.22;
+  return Math.abs(prevAvg - nextAvg) * 1.4 + Math.abs(prevBase - nextBase) * 1.1 - openBonus;
+}
+
+export function selectShapeSequence(chords, library, enabledCategories, shapeMode, overrides = {}) {
+  const candidatesByIndex = chords.map((chord) => getCandidateShapesForChord(chord, library, enabledCategories));
+  if (candidatesByIndex.some((candidates) => !candidates.length)) return null;
+
+  let selectedIndices = candidatesByIndex.map(() => 0);
+
+  if (shapeMode === 'best-fit') {
+    const scores = candidatesByIndex.map(() => []);
+    const parents = candidatesByIndex.map(() => []);
+
+    for (let chordIndex = 0; chordIndex < candidatesByIndex.length; chordIndex += 1) {
+      const candidates = candidatesByIndex[chordIndex];
+      for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
+        const current = candidates[candidateIndex];
+        const baseScore = current.positionScore * 0.35 + current.difficulty * 0.5;
+        if (chordIndex === 0) {
+          scores[chordIndex][candidateIndex] = baseScore;
+          parents[chordIndex][candidateIndex] = -1;
+          continue;
+        }
+
+        let bestScore = Infinity;
+        let bestParent = 0;
+        for (let previousIndex = 0; previousIndex < candidatesByIndex[chordIndex - 1].length; previousIndex += 1) {
+          const parentScore = scores[chordIndex - 1][previousIndex]
+            + transitionCost(candidatesByIndex[chordIndex - 1][previousIndex], current)
+            + baseScore;
+          if (parentScore < bestScore) {
+            bestScore = parentScore;
+            bestParent = previousIndex;
+          }
+        }
+
+        scores[chordIndex][candidateIndex] = bestScore;
+        parents[chordIndex][candidateIndex] = bestParent;
+      }
+    }
+
+    let bestTailIndex = 0;
+    let bestTailScore = Infinity;
+    const lastScores = scores[scores.length - 1];
+    for (let index = 0; index < lastScores.length; index += 1) {
+      if (lastScores[index] < bestTailScore) {
+        bestTailScore = lastScores[index];
+        bestTailIndex = index;
+      }
+    }
+
+    selectedIndices = selectedIndices.map(() => 0);
+    for (let chordIndex = chords.length - 1; chordIndex >= 0; chordIndex -= 1) {
+      selectedIndices[chordIndex] = bestTailIndex;
+      bestTailIndex = parents[chordIndex][bestTailIndex];
+      if (bestTailIndex < 0) break;
+    }
+  }
+
+  const selected = candidatesByIndex.map((candidates, index) => {
+    const overrideIndex = overrides[index];
+    if (Number.isInteger(overrideIndex) && overrideIndex >= 0 && overrideIndex < candidates.length) {
+      selectedIndices[index] = overrideIndex;
+    }
+    return candidates[selectedIndices[index]];
+  });
+
+  return {
+    selected,
+    selectedIndices,
+    candidatesByIndex
+  };
+}

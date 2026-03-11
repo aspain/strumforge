@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>chord-muse</title>
+  <meta
+    name="description"
+    content="Generate guitar-friendly chord progressions with playable fretboard diagrams, a metronome, and simple drum grooves."
+  />
+  <meta name="theme-color" content="#f3ede3" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="chord-muse" />
+  <meta
+    property="og:description"
+    content="A compact chord progression generator for guitar players, with diagrams and rhythm tools in one screen."
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Guitar practice companion</p>
+        <h1>chord-muse</h1>
+        <p class="hero-copy">Random chord loops, visible fretings, and rhythm on one screen.</p>
+      </div>
+      <div class="hero-status">
+        <div class="status-pill">
+          <span class="status-label">Current key</span>
+          <strong id="current-key-label">Loading…</strong>
+        </div>
+        <div class="status-pill">
+          <span class="status-label">Shape logic</span>
+          <strong id="shape-mode-label">Canonical</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-grid">
+      <section class="panel control-panel" aria-labelledby="controls-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Generator</p>
+            <h2 id="controls-heading">Playability first</h2>
+          </div>
+          <button id="generate-button" class="generate-button" type="button">Generate</button>
+        </div>
+
+        <div class="control-stack">
+          <div class="toggle-pair">
+            <label class="toggle-row">
+              <span>Lock key</span>
+              <input id="key-lock-toggle" type="checkbox" />
+            </label>
+            <label class="toggle-row">
+              <span>Left-handed</span>
+              <input id="left-handed-toggle" type="checkbox" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Key root</span>
+            <select id="key-root-select"></select>
+          </label>
+
+          <fieldset class="segmented-field">
+            <legend>Mode</legend>
+            <div class="segmented">
+              <label><input type="radio" name="mode-preference" value="auto" checked /> <span>Auto</span></label>
+              <label><input type="radio" name="mode-preference" value="major" /> <span>Major</span></label>
+              <label><input type="radio" name="mode-preference" value="minor" /> <span>Minor</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="checkbox-field">
+            <legend>Shape categories</legend>
+            <label><input type="checkbox" name="shape-category" value="open" checked /> <span>Open</span></label>
+            <label><input type="checkbox" name="shape-category" value="barre" checked /> <span>Barre</span></label>
+            <label><input type="checkbox" name="shape-category" value="seventh" checked /> <span>Seventh</span></label>
+            <label><input type="checkbox" name="shape-category" value="power" /> <span>Power</span></label>
+            <label><input type="checkbox" name="shape-category" value="sus/add" /> <span>Sus/Add</span></label>
+          </fieldset>
+
+          <fieldset class="segmented-field">
+            <legend>Default shape mode</legend>
+            <div class="segmented">
+              <label><input type="radio" name="shape-mode" value="canonical" checked /> <span>Canonical</span></label>
+              <label><input type="radio" name="shape-mode" value="best-fit" /> <span>Best fit</span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <p id="generator-warning" class="inline-warning" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="panel progression-panel" aria-labelledby="progression-heading">
+        <div class="panel-heading center-heading">
+          <div>
+            <p class="panel-kicker">Progression</p>
+            <h2 id="progression-heading">Practice loop</h2>
+          </div>
+          <p class="loop-meta" id="progression-meta">Generating…</p>
+        </div>
+
+        <div id="progression-grid" class="progression-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="panel rhythm-panel" aria-labelledby="rhythm-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Rhythm</p>
+            <h2 id="rhythm-heading">Pocket</h2>
+          </div>
+          <button id="transport-button" class="transport-button" type="button" aria-pressed="false">Play</button>
+        </div>
+
+        <div class="tempo-block">
+          <label class="field">
+            <span class="field-label">Tempo</span>
+            <div class="tempo-inputs">
+              <input id="tempo-slider" type="range" min="50" max="180" value="92" />
+              <label class="tempo-box">
+                <input id="tempo-number" type="number" min="50" max="180" value="92" />
+                <span>BPM</span>
+              </label>
+            </div>
+          </label>
+        </div>
+
+        <div class="rhythm-fields">
+          <label class="field">
+            <span class="field-label">Meter</span>
+            <select id="meter-select">
+              <option value="4/4">4/4</option>
+              <option value="3/4">3/4</option>
+              <option value="6/8">6/8</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Groove</span>
+            <select id="groove-select"></select>
+          </label>
+        </div>
+
+        <div class="beat-box">
+          <div class="beat-header">
+            <span>Beat pulse</span>
+            <strong id="groove-label">Folk Pop</strong>
+          </div>
+          <div id="beat-indicator" class="beat-indicator" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
