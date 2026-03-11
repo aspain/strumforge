@@ -81,11 +81,6 @@ function assertShapeMatchesQuality(shape) {
     );
   }
 
-  if (shape.categories.includes('shell')) {
-    assert.equal(pitchClasses.length, 3, `${shape.id} (${shape.label}) is not a true shell voicing`);
-    assert.ok(!pitchClasses.includes((shape.pitchClass + 7) % 12), `${shape.id} (${shape.label}) should omit the fifth`);
-  }
-
   if (shape.categories.includes('triad')) {
     assert.equal(pitchClasses.length, 3, `${shape.id} (${shape.label}) should contain exactly three pitch classes`);
   }
@@ -94,7 +89,7 @@ function assertShapeMatchesQuality(shape) {
 function collectAllShapes(library) {
   const all = [...library.openShapes];
   const seenIds = new Set(all.map((shape) => shape.id));
-  const enabled = new Set(['open', 'barre', 'seventh', 'power', 'sus/add', 'triad', 'shell']);
+  const enabled = new Set(['open', 'barre', 'power', 'triad']);
   const qualities = Object.keys(QUALITY_RULES);
 
   for (let pitchClass = 0; pitchClass < 12; pitchClass += 1) {
@@ -129,7 +124,14 @@ test('all open and generated chord shapes match their labeled chord quality', as
   }
 });
 
-test('triads and 7th shells surface as real alternate candidates when enabled', async () => {
+test('shell voicings are fully removed from the chord library', async () => {
+  const library = await loadLibrary();
+
+  const shapes = collectAllShapes(library);
+  assert.ok(shapes.every((shape) => !shape.categories.includes('shell')));
+});
+
+test('triads and seventh chord shapes surface as real alternate candidates when enabled', async () => {
   const library = await loadLibrary();
 
   const majorCandidates = getCandidateShapesForChord(
@@ -145,10 +147,8 @@ test('triads and 7th shells surface as real alternate candidates when enabled', 
   const majorSevenCandidates = getCandidateShapesForChord(
     { id: 'C:maj7', pitchClass: 0, quality: 'maj7', label: 'Cmaj7' },
     library,
-    new Set(['open', 'seventh', 'shell'])
+    new Set(['open', 'barre'])
   );
-  assert.deepEqual(
-    majorSevenCandidates.map((shape) => shape.label),
-    ['Open Cmaj7', 'Dmaj7-shape shell']
-  );
+  assert.ok(majorSevenCandidates.some((shape) => shape.label === 'Open Cmaj7'));
+  assert.ok(majorSevenCandidates.some((shape) => shape.label === 'Amaj7-shape barre'));
 });

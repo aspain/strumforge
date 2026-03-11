@@ -1,9 +1,11 @@
 import { buildChordId, formatChordLabel, normalizePitchClass } from './music-theory.js';
 
 const OPEN_STRING_PITCHES = [4, 9, 2, 7, 11, 4];
+const SHAPE_TYPE_CATEGORIES = new Set(['open', 'barre', 'triad', 'power']);
 
-function intersectsRequiredCategories(shapeCategories, enabledCategories) {
-  return shapeCategories.every((category) => enabledCategories.has(category));
+function matchesEnabledShapeTypes(shapeCategories, enabledShapeTypes) {
+  const requiredShapeTypes = shapeCategories.filter((category) => SHAPE_TYPE_CATEGORIES.has(category));
+  return requiredShapeTypes.length > 0 && requiredShapeTypes.every((category) => enabledShapeTypes.has(category));
 }
 
 function cloneShape(shape, chordId, chordLabel) {
@@ -302,36 +304,6 @@ function makeFourthStringShape(rootPitchClass, quality) {
       canonicalRank: 28,
       positionScore: (rootFret || 1) + 0.25
     },
-    '7': {
-      frets: [-1, -1, rootFret, -1, rootFret + 1, rootFret + 2],
-      fingers: [0, 0, 1, 0, 2, 3],
-      barres: [],
-      label: 'D7-shape shell',
-      categories: ['shell', 'seventh'],
-      difficulty: 1,
-      canonicalRank: 29,
-      positionScore: (rootFret || 1) + 0.3
-    },
-    min7: {
-      frets: [-1, -1, rootFret, -1, rootFret + 1, rootFret + 1],
-      fingers: [0, 0, 1, 0, 2, 2],
-      barres: [{ fret: rootFret + 1, fromString: 2, toString: 1, finger: 2 }],
-      label: 'Dm7-shape shell',
-      categories: ['shell', 'seventh'],
-      difficulty: 1,
-      canonicalRank: 30,
-      positionScore: (rootFret || 1) + 0.3
-    },
-    maj7: {
-      frets: [-1, -1, rootFret, -1, rootFret + 2, rootFret + 2],
-      fingers: [0, 0, 1, 0, 2, 3],
-      barres: [],
-      label: 'Dmaj7-shape shell',
-      categories: ['shell', 'seventh'],
-      difficulty: 1,
-      canonicalRank: 31,
-      positionScore: (rootFret || 1) + 0.25
-    },
     sus2: {
       frets: [-1, -1, rootFret, rootFret + 2, rootFret + 3, rootFret],
       fingers: [0, 0, 1, 2, 4, 1],
@@ -390,13 +362,13 @@ function compareShapes(a, b) {
   );
 }
 
-export function getCandidateShapesForChord(chord, library, enabledCategories) {
-  const enabled = enabledCategories instanceof Set ? enabledCategories : new Set(enabledCategories);
+export function getCandidateShapesForChord(chord, library, enabledShapeTypes) {
+  const enabled = enabledShapeTypes instanceof Set ? enabledShapeTypes : new Set(enabledShapeTypes);
   const candidates = [];
 
   for (const shape of library.openShapes) {
     if (shape.pitchClass !== chord.pitchClass || shape.quality !== chord.quality) continue;
-    if (!intersectsRequiredCategories(shape.categories, enabled)) continue;
+    if (!matchesEnabledShapeTypes(shape.categories, enabled)) continue;
     candidates.push(cloneShape(shape, chord.id, chord.label));
   }
 
@@ -404,18 +376,18 @@ export function getCandidateShapesForChord(chord, library, enabledCategories) {
   for (const buildShape of movableFactories) {
     const shape = buildShape(chord.pitchClass, chord.quality);
     if (!shape) continue;
-    if (!intersectsRequiredCategories(shape.categories, enabled)) continue;
+    if (!matchesEnabledShapeTypes(shape.categories, enabled)) continue;
     candidates.push(shape);
   }
 
   return candidates.sort(compareShapes);
 }
 
-export function getPlayableChordChoices(chordChoices, library, enabledCategories) {
+export function getPlayableChordChoices(chordChoices, library, enabledShapeTypes) {
   return chordChoices
     .map((choice) => ({
       ...choice,
-      candidates: getCandidateShapesForChord(choice, library, enabledCategories)
+      candidates: getCandidateShapesForChord(choice, library, enabledShapeTypes)
     }))
     .filter((choice) => choice.candidates.length);
 }
@@ -439,8 +411,8 @@ function transitionCost(prevShape, nextShape) {
   return Math.abs(prevAvg - nextAvg) * 1.4 + Math.abs(prevBase - nextBase) * 1.1 - openBonus;
 }
 
-export function selectShapeSequence(chords, library, enabledCategories, shapeMode, overrides = {}) {
-  const candidatesByIndex = chords.map((chord) => getCandidateShapesForChord(chord, library, enabledCategories));
+export function selectShapeSequence(chords, library, enabledShapeTypes, shapeMode, overrides = {}) {
+  const candidatesByIndex = chords.map((chord) => getCandidateShapesForChord(chord, library, enabledShapeTypes));
   if (candidatesByIndex.some((candidates) => !candidates.length)) return null;
 
   let selectedIndices = candidatesByIndex.map(() => 0);

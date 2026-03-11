@@ -2,13 +2,19 @@ import { AudioEngine, GROOVES } from './audio-engine.js';
 import { loadChordLibrary, selectShapeSequence } from './chord-library.js';
 import { renderChordDiagram } from './chord-diagram.js';
 import { FRIENDLY_NOTES, pitchClassToNote } from './music-theory.js';
-import { generateProgression, rebuildProgression, NO_PLAYABLE_LOOP_WARNING } from './progression-engine.js';
+import {
+  generateProgression,
+  rebuildProgression,
+  getFeasibleKeyRoots,
+  NO_PLAYABLE_LOOP_WARNING
+} from './progression-engine.js';
 
 const state = {
   keyLocked: false,
   keyRoot: 0,
   modePreference: 'auto',
-  enabledCategories: new Set(['open', 'barre', 'seventh']),
+  enabledShapeTypes: new Set(['open']),
+  enabledFlavorOptions: new Set(),
   leftHanded: false,
   tempo: 92,
   meter: '4/4',
@@ -19,8 +25,6 @@ const state = {
   progression: null,
   shapeOverrides: {}
 };
-
-const HARMONY_CATEGORIES = new Set(['seventh', 'sus/add', 'power']);
 
 const elements = {
   currentKeyLabel: document.getElementById('current-key-label'),
@@ -62,7 +66,7 @@ function getSelectedShapes() {
   return selectShapeSequence(
     state.progression.chords,
     chordLibrary,
-    state.enabledCategories,
+    state.enabledShapeTypes,
     'best-fit',
     state.shapeOverrides
   );
@@ -74,11 +78,20 @@ function formatKeyLabel(root, mode) {
 }
 
 function renderKeyOptions() {
-  elements.keyRootSelect.innerHTML = FRIENDLY_NOTES
-    .map((note, index) => `<option value="${index}">${note}</option>`)
+  const feasibleRoots = chordLibrary ? getFeasibleKeyRoots(state, chordLibrary) : FRIENDLY_NOTES.map((_, index) => index);
+  if (feasibleRoots.length) {
+    if (!feasibleRoots.includes(state.keyRoot)) {
+      state.keyRoot = feasibleRoots[0];
+    }
+  } else {
+    state.keyRoot = 0;
+  }
+
+  elements.keyRootSelect.innerHTML = feasibleRoots
+    .map((index) => `<option value="${index}">${FRIENDLY_NOTES[index]}</option>`)
     .join('');
   elements.keyRootSelect.value = String(state.keyRoot);
-  elements.keyRootSelect.disabled = !state.keyLocked;
+  elements.keyRootSelect.disabled = !state.keyLocked || feasibleRoots.length === 0;
 }
 
 function currentGrooves() {
@@ -132,7 +145,7 @@ function updateTransportButton(isPlaying) {
 }
 
 function renderEmptyProgression({
-  title = 'No playable loop with the current voicing filters'
+  title = NO_PLAYABLE_LOOP_WARNING
 } = {}) {
   setActiveChord(-1);
   audioEngine.setChordSequence([]);
@@ -163,7 +176,9 @@ function renderEmptyProgression({
 
 function renderProgression() {
   if (!state.progression || !state.progression.chords?.length) {
-    renderEmptyProgression();
+    renderEmptyProgression({
+      title: elements.warning.textContent || NO_PLAYABLE_LOOP_WARNING
+    });
     updateStatusLine();
     return;
   }
@@ -212,7 +227,7 @@ function renderProgression() {
             data-cycle-shape="${index}"
             ${totalCandidates < 2 ? 'disabled' : ''}
           >
-            ${totalCandidates < 2 ? 'Only voicing' : `Swap shape (${selectedShapes.selectedIndices[index] + 1}/${totalCandidates})`}
+            ${totalCandidates < 2 ? 'Only shape' : `Swap shape (${selectedShapes.selectedIndices[index] + 1}/${totalCandidates})`}
           </button>
         </div>
       </article>
@@ -246,14 +261,21 @@ function syncTempo(value) {
   audioEngine.setTempo(nextTempo);
 }
 
-function readEnabledCategories() {
-  state.enabledCategories = new Set(
-    Array.from(document.querySelectorAll('input[name="shape-category"]:checked')).map((node) => node.value)
+function readEnabledShapeTypes() {
+  state.enabledShapeTypes = new Set(
+    Array.from(document.querySelectorAll('input[name="shape-type"]:checked')).map((node) => node.value)
+  );
+}
+
+function readEnabledFlavorOptions() {
+  state.enabledFlavorOptions = new Set(
+    Array.from(document.querySelectorAll('input[name="flavor-option"]:checked')).map((node) => node.value)
   );
 }
 
 function applyShapeFilters() {
   state.shapeOverrides = {};
+  renderKeyOptions();
   if (!state.progression) {
     regenerateProgression();
     return;
@@ -264,16 +286,22 @@ function applyShapeFilters() {
 function refreshProgression(rebuildStrategy = 'preserve') {
   if (!state.progression || !chordLibrary) return;
   state.shapeOverrides = {};
-  const result = rebuildProgression(
+  renderKeyOptions();
+  let result = rebuildProgression(
     state.progression,
     { ...state, rebuildStrategy },
     chordLibrary
   );
   if (result.warning) {
-    state.progression = null;
-    updateWarning(result.warning);
-    renderProgression();
-    return;
+    // If preserving the current loop is impossible under the new constraints,
+    // fall back to a fresh progression that fits the user's current settings.
+    result = generateProgression(state, chordLibrary);
+    if (result.warning) {
+      state.progression = null;
+      updateWarning(result.warning);
+      renderProgression();
+      return;
+    }
   }
 
   state.progression = result;
@@ -286,7 +314,7 @@ function attachEventListeners() {
   elements.generateButton.addEventListener('click', regenerateProgression);
   elements.keyLockToggle.addEventListener('change', () => {
     state.keyLocked = elements.keyLockToggle.checked;
-    elements.keyRootSelect.disabled = !state.keyLocked;
+    renderKeyOptions();
     refreshProgression('preserve');
   });
 
@@ -298,18 +326,26 @@ function attachEventListeners() {
   document.querySelectorAll('input[name="mode-preference"]').forEach((node) => {
     node.addEventListener('change', () => {
       state.modePreference = document.querySelector('input[name="mode-preference"]:checked').value;
+      renderKeyOptions();
       refreshProgression('preserve');
     });
   });
 
-  document.querySelectorAll('input[name="shape-category"]').forEach((node) => {
+  document.querySelectorAll('input[name="shape-type"]').forEach((node) => {
     node.addEventListener('change', () => {
-      readEnabledCategories();
-      if (HARMONY_CATEGORIES.has(node.value)) {
-        refreshProgression('reharmonize');
+      readEnabledShapeTypes();
+      if (node.value === 'power' && state.progression?.chords?.some((chord) => chord.quality === '5')) {
+        refreshProgression('preserve');
         return;
       }
       applyShapeFilters();
+    });
+  });
+
+  document.querySelectorAll('input[name="flavor-option"]').forEach((node) => {
+    node.addEventListener('change', () => {
+      readEnabledFlavorOptions();
+      refreshProgression('reharmonize');
     });
   });
 
@@ -384,6 +420,7 @@ async function init() {
   syncTransportMode();
   attachEventListeners();
   chordLibrary = await loadChordLibrary();
+  renderKeyOptions();
   regenerateProgression();
 }
 

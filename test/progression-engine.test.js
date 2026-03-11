@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import { hydrateChordLibrary, getCandidateShapesForChord, selectShapeSequence } from '../public/js/chord-library.js';
-import { generateProgression, rebuildProgression, NO_PLAYABLE_LOOP_WARNING } from '../public/js/progression-engine.js';
+import {
+  generateProgression,
+  getFeasibleKeyRoots,
+  rebuildProgression,
+  LOCKED_KEY_CHORD_SHAPES_WARNING
+} from '../public/js/progression-engine.js';
 
 async function loadLibrary() {
   const file = new URL('../public/data/chord-shapes.json', import.meta.url);
@@ -11,35 +16,124 @@ async function loadLibrary() {
   return hydrateChordLibrary(raw);
 }
 
-test('generateProgression returns four playable chords for a guitar-friendly open key', async () => {
+test('generateProgression returns four playable chords when only open chords are enabled and key is unlocked', async () => {
   const library = await loadLibrary();
   const state = {
-    keyLocked: true,
-    keyRoot: 7,
+    keyLocked: false,
+    keyRoot: 0,
     modePreference: 'major',
-    enabledCategories: new Set(['open'])
+    enabledShapeTypes: new Set(['open']),
+    enabledFlavorOptions: new Set()
   };
 
   const progression = generateProgression(state, library, () => 0);
   assert.equal(progression.warning, '');
   assert.equal(progression.chords.length, 4);
   for (const chord of progression.chords) {
-    const candidates = getCandidateShapesForChord(chord, library, state.enabledCategories);
+    const candidates = getCandidateShapesForChord(chord, library, state.enabledShapeTypes);
     assert.ok(candidates.length > 0);
   }
 });
 
-test('generateProgression warns when the selected category set cannot produce a progression', async () => {
+test('generateProgression warns when a locked key does not fit the selected chord shapes', async () => {
   const library = await loadLibrary();
   const state = {
     keyLocked: true,
-    keyRoot: 0,
+    keyRoot: 1,
     modePreference: 'major',
-    enabledCategories: new Set(['sus/add'])
+    enabledShapeTypes: new Set(['open']),
+    enabledFlavorOptions: new Set()
   };
 
   const progression = generateProgression(state, library, () => 0);
-  assert.equal(progression.warning, NO_PLAYABLE_LOOP_WARNING);
+  assert.equal(progression.warning, LOCKED_KEY_CHORD_SHAPES_WARNING);
+});
+
+test('generateProgression can build a C major open-chord loop when the key is locked to C', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyLocked: true,
+      keyRoot: 0,
+      modePreference: 'major',
+      enabledShapeTypes: new Set(['open']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0.999
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.keyRoot, 0);
+  assert.equal(progression.mode, 'major');
+  assert.equal(progression.chords.length, 4);
+  for (const chord of progression.chords) {
+    const candidates = getCandidateShapesForChord(chord, library, new Set(['open']));
+    assert.ok(candidates.length > 0, `Expected at least one open-chord shape for ${chord.label}`);
+  }
+});
+
+test('generateProgression offers multiple open-chord major loops when the key is locked to C', async () => {
+  const library = await loadLibrary();
+  const templateIds = new Set(
+    [0, 0.82, 0.9, 0.97, 0.999].map((rngValue) => {
+      const progression = generateProgression(
+        {
+          keyLocked: true,
+          keyRoot: 0,
+          modePreference: 'major',
+          enabledShapeTypes: new Set(['open']),
+          enabledFlavorOptions: new Set()
+        },
+        library,
+        () => rngValue
+      );
+      assert.equal(progression.warning, '');
+      return progression.templateId;
+    })
+  );
+
+  assert.ok(templateIds.size > 1, 'Expected more than one open-chord template for locked C major');
+});
+
+test('getFeasibleKeyRoots reflects open-chord-friendly keys for the current settings', async () => {
+  const library = await loadLibrary();
+  const feasibleRoots = getFeasibleKeyRoots(
+    {
+      keyLocked: false,
+      keyRoot: 0,
+      modePreference: 'auto',
+      enabledShapeTypes: new Set(['open']),
+      enabledFlavorOptions: new Set()
+    },
+    library
+  );
+
+  assert.ok(feasibleRoots.includes(0), 'Expected C to be available for open chords');
+  assert.ok(!feasibleRoots.includes(10), 'Expected Bb to be unavailable for open chords');
+});
+
+test('open and barre chord shapes generate playable progressions across all keys and modes', async () => {
+  const library = await loadLibrary();
+
+  for (let keyRoot = 0; keyRoot < 12; keyRoot += 1) {
+    for (const modePreference of ['major', 'minor']) {
+      const progression = generateProgression(
+        {
+          keyLocked: true,
+          keyRoot,
+          modePreference,
+          enabledShapeTypes: new Set(['open', 'barre']),
+          enabledFlavorOptions: new Set()
+        },
+        library,
+        () => 0
+      );
+
+      assert.equal(progression.warning, '', `Expected playable progression for ${keyRoot} ${modePreference}`);
+      assert.equal(progression.chords.length, 4);
+    }
+  }
 });
 
 test('canonical and best-fit shape selection preserve chord identity', async () => {
@@ -48,12 +142,13 @@ test('canonical and best-fit shape selection preserve chord identity', async () 
     keyLocked: true,
     keyRoot: 7,
     modePreference: 'major',
-    enabledCategories: new Set(['open', 'barre', 'seventh'])
+    enabledShapeTypes: new Set(['open', 'barre']),
+    enabledFlavorOptions: new Set(['seventh'])
   };
 
   const progression = generateProgression(state, library, () => 0.18);
-  const canonical = selectShapeSequence(progression.chords, library, state.enabledCategories, 'canonical');
-  const bestFit = selectShapeSequence(progression.chords, library, state.enabledCategories, 'best-fit');
+  const canonical = selectShapeSequence(progression.chords, library, state.enabledShapeTypes, 'canonical');
+  const bestFit = selectShapeSequence(progression.chords, library, state.enabledShapeTypes, 'best-fit');
 
   assert.equal(canonical.selected.length, progression.chords.length);
   assert.equal(bestFit.selected.length, progression.chords.length);
@@ -80,27 +175,14 @@ test('triad category exposes movable fourth-string triads for plain major chords
   assert.ok(candidates.some((shape) => shape.label === 'D-shape triad'));
 });
 
-test('shell category exposes movable fourth-string seventh shells', async () => {
-  const library = await loadLibrary();
-  const chord = {
-    id: 'C:maj7',
-    pitchClass: 0,
-    quality: 'maj7',
-    label: 'Cmaj7'
-  };
-
-  const candidates = getCandidateShapesForChord(chord, library, new Set(['shell', 'seventh']));
-
-  assert.ok(candidates.some((shape) => shape.label === 'Dmaj7-shape shell'));
-});
-
 test('triad-only filters can still generate a playable progression', async () => {
   const library = await loadLibrary();
   const state = {
     keyLocked: true,
     keyRoot: 0,
     modePreference: 'major',
-    enabledCategories: new Set(['triad'])
+    enabledShapeTypes: new Set(['triad']),
+    enabledFlavorOptions: new Set()
   };
 
   const progression = generateProgression(state, library, () => 0);
@@ -115,7 +197,8 @@ test('rebuildProgression preserves degree sequence while switching mode without 
     keyLocked: true,
     keyRoot: 7,
     modePreference: 'major',
-    enabledCategories: new Set(['open', 'barre', 'seventh'])
+    enabledShapeTypes: new Set(['open', 'barre']),
+    enabledFlavorOptions: new Set(['seventh'])
   };
   const progression = generateProgression(initialState, library, () => 0);
 
@@ -143,7 +226,8 @@ test('rebuildProgression transposes the current progression when the locked key 
     keyLocked: true,
     keyRoot: 7,
     modePreference: 'major',
-    enabledCategories: new Set(['open', 'barre', 'seventh'])
+    enabledShapeTypes: new Set(['open', 'barre']),
+    enabledFlavorOptions: new Set(['seventh'])
   };
   const progression = generateProgression(initialState, library, () => 0);
 
@@ -174,7 +258,8 @@ test('rebuildProgression with reharmonize upgrades eligible chords to sevenths w
     keyLocked: true,
     keyRoot: 7,
     modePreference: 'major',
-    enabledCategories: new Set(['open', 'barre'])
+    enabledShapeTypes: new Set(['open', 'barre']),
+    enabledFlavorOptions: new Set()
   };
   const progression = generateProgression(baseState, library, () => 0);
 
@@ -182,7 +267,7 @@ test('rebuildProgression with reharmonize upgrades eligible chords to sevenths w
     progression,
     {
       ...baseState,
-      enabledCategories: new Set(['open', 'barre', 'seventh']),
+      enabledFlavorOptions: new Set(['seventh']),
       rebuildStrategy: 'reharmonize'
     },
     library
@@ -206,7 +291,8 @@ test('rebuildProgression with reharmonize upgrades eligible major chords to sus/
     keyLocked: true,
     keyRoot: 7,
     modePreference: 'major',
-    enabledCategories: new Set(['open', 'barre'])
+    enabledShapeTypes: new Set(['open', 'barre']),
+    enabledFlavorOptions: new Set()
   };
   const progression = generateProgression(baseState, library, () => 0);
 
@@ -214,7 +300,7 @@ test('rebuildProgression with reharmonize upgrades eligible major chords to sus/
     progression,
     {
       ...baseState,
-      enabledCategories: new Set(['open', 'barre', 'sus/add']),
+      enabledFlavorOptions: new Set(['sus/add']),
       rebuildStrategy: 'reharmonize'
     },
     library
@@ -230,4 +316,29 @@ test('rebuildProgression with reharmonize upgrades eligible major chords to sus/
     rebuilt.chords.some((chord) => ['sus2', 'sus4', 'add9'].includes(chord.quality)),
     'Expected at least one sus/add chord after reharmonizing'
   );
+});
+
+test('power chord shapes allow 5-chord qualities and playable power shapes', async () => {
+  const library = await loadLibrary();
+  const state = {
+    keyLocked: true,
+    keyRoot: 0,
+    modePreference: 'major',
+    enabledShapeTypes: new Set(['power']),
+    enabledFlavorOptions: new Set()
+  };
+
+  const progression = generateProgression(state, library, () => 0.999);
+
+  assert.equal(progression.warning, '');
+  assert.ok(
+    progression.chords.some((chord) => chord.quality === '5'),
+    'Expected at least one power-chord quality when power shapes are enabled'
+  );
+
+  for (const chord of progression.chords.filter((item) => item.quality === '5')) {
+    const candidates = getCandidateShapesForChord(chord, library, state.enabledShapeTypes);
+    assert.ok(candidates.length > 0);
+    assert.ok(candidates.every((shape) => shape.categories.includes('power')));
+  }
 });

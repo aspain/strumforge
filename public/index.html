@@ -44,7 +44,7 @@
 
         <div class="control-grid">
           <section class="control-block" aria-label="Key and generation controls">
-            <div class="control-block-header">
+            <div class="control-block-header aligned-control-header">
               <p class="panel-kicker">Key</p>
               <span class="control-caption">Randomize or lock the tonal center.</span>
             </div>
@@ -78,24 +78,23 @@
             <button id="generate-button" class="generate-button key-generate-button" type="button">Generate</button>
           </section>
 
-          <section class="control-block voicings-block" aria-label="Shape controls">
-            <div class="control-block-header">
-              <p class="panel-kicker">Voicings</p>
+          <section class="control-block voicings-block" aria-label="Chord shape controls">
+            <div class="control-block-header aligned-control-header">
+              <p class="panel-kicker">Chord shapes</p>
+              <span class="control-caption" aria-hidden="true"></span>
             </div>
 
-            <fieldset class="checkbox-field checkbox-field-group">
-              <legend>Voicing style</legend>
-              <label><input type="checkbox" name="shape-category" value="open" checked /> <span>Open</span></label>
-              <label><input type="checkbox" name="shape-category" value="barre" checked /> <span>Barre</span></label>
-              <label><input type="checkbox" name="shape-category" value="triad" /> <span>Triads</span></label>
-              <label><input type="checkbox" name="shape-category" value="shell" /> <span>Shells</span></label>
-              <label><input type="checkbox" name="shape-category" value="power" /> <span>Power</span></label>
-            </fieldset>
+            <div class="checkbox-field checkbox-field-group" aria-label="Chord shapes" role="group">
+              <label><input type="checkbox" name="shape-type" value="open" checked /> <span>Open chords</span></label>
+              <label><input type="checkbox" name="shape-type" value="barre" /> <span>Barre chords</span></label>
+              <label><input type="checkbox" name="shape-type" value="triad" /> <span>Triad shapes</span></label>
+              <label><input type="checkbox" name="shape-type" value="power" /> <span>Power chords</span></label>
+            </div>
 
             <fieldset class="checkbox-field checkbox-field-group checkbox-field-group-compact">
-              <legend>Chord color</legend>
-              <label><input type="checkbox" name="shape-category" value="seventh" checked /> <span>Sevenths</span></label>
-              <label><input type="checkbox" name="shape-category" value="sus/add" /> <span>Sus/Add</span></label>
+              <legend>Chord flavor</legend>
+              <label><input type="checkbox" name="flavor-option" value="seventh" /> <span>Sevenths</span></label>
+              <label><input type="checkbox" name="flavor-option" value="sus/add" /> <span>Suspended / add9</span></label>
             </fieldset>
           </section>
 
