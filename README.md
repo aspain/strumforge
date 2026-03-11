@@ -6,9 +6,9 @@
 
 - Theory-weighted 4-chord progressions in major and natural minor keys
 - Guitar-first chord cards with SVG diagrams, finger numbers, open/muted strings, and alternate voicing cycling
-- Ability filters for open, barre, seventh, power, and sus/add shapes
+- Ability filters for open, barre, seventh, power, sus/add, triad, and 7th shell shapes
 - Global canonical vs. best-fit shape selection plus a left-handed mirror toggle
-- Metronome and drum grooves for `4/4`, `3/4`, and `6/8`
+- Expanded metronome and drum groove styles for `4/4`, `3/4`, and `6/8`
 
 ## Local use
 

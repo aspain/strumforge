@@ -40,6 +40,8 @@ function buildMovableShape({
 }) {
   return {
     id,
+    pitchClass,
+    quality,
     chordId: buildChordId(pitchClass, quality),
     chordLabel: formatChordLabel(pitchClass, quality),
     label,
@@ -124,6 +126,36 @@ function makeSixthStringBarre(rootPitchClass, quality) {
       difficulty: 2,
       canonicalRank: 24,
       positionScore: rootFret || 1
+    },
+    sus2: {
+      frets: [rootFret, rootFret + 2, rootFret + 4, rootFret + 4, rootFret, rootFret],
+      fingers: [1, 2, 4, 4, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'Esus2-shape barre',
+      categories: ['barre', 'sus/add'],
+      difficulty: 4,
+      canonicalRank: 25,
+      positionScore: (rootFret || 1) + 0.4
+    },
+    sus4: {
+      frets: [rootFret, rootFret + 2, rootFret + 2, rootFret + 2, rootFret, rootFret],
+      fingers: [1, 3, 4, 4, 1, 1],
+      barres: [{ fret: rootFret, fromString: 6, toString: 1, finger: 1 }],
+      label: 'Esus4-shape barre',
+      categories: ['barre', 'sus/add'],
+      difficulty: 3,
+      canonicalRank: 25,
+      positionScore: (rootFret || 1) + 0.35
+    },
+    add9: {
+      frets: [rootFret, rootFret + 2, rootFret + 4, rootFret + 1, rootFret, rootFret + 2],
+      fingers: [1, 2, 4, 1, 1, 3],
+      barres: [{ fret: rootFret, fromString: 6, toString: 2, finger: 1 }],
+      label: 'Eadd9-shape barre',
+      categories: ['barre', 'sus/add'],
+      difficulty: 4,
+      canonicalRank: 26,
+      positionScore: (rootFret || 1) + 0.55
     }
   };
 
@@ -203,6 +235,36 @@ function makeFifthStringBarre(rootPitchClass, quality) {
       difficulty: 2,
       canonicalRank: 23,
       positionScore: rootFret || 1
+    },
+    sus2: {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 2, rootFret, rootFret],
+      fingers: [0, 1, 3, 4, 1, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'Asus2-shape barre',
+      categories: ['barre', 'sus/add'],
+      difficulty: 3,
+      canonicalRank: 25,
+      positionScore: (rootFret || 1) + 0.35
+    },
+    sus4: {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 2, rootFret + 3, rootFret],
+      fingers: [0, 1, 2, 3, 4, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'Asus4-shape barre',
+      categories: ['barre', 'sus/add'],
+      difficulty: 4,
+      canonicalRank: 25,
+      positionScore: (rootFret || 1) + 0.45
+    },
+    add9: {
+      frets: [-1, rootFret, rootFret + 2, rootFret + 4, rootFret + 2, rootFret],
+      fingers: [0, 1, 2, 4, 3, 1],
+      barres: [{ fret: rootFret, fromString: 5, toString: 1, finger: 1 }],
+      label: 'Aadd9-shape barre',
+      categories: ['barre', 'sus/add'],
+      difficulty: 4,
+      canonicalRank: 26,
+      positionScore: (rootFret || 1) + 0.55
     }
   };
 
@@ -210,6 +272,92 @@ function makeFifthStringBarre(rootPitchClass, quality) {
   if (!config) return null;
   return buildMovableShape({
     id: `${buildChordId(rootPitchClass, quality)}-fifth-root`,
+    pitchClass: rootPitchClass,
+    quality,
+    ...config
+  });
+}
+
+function makeFourthStringShape(rootPitchClass, quality) {
+  const rootFret = rootFretForString(rootPitchClass, 2);
+
+  const configs = {
+    maj: {
+      frets: [-1, -1, rootFret, rootFret + 2, rootFret + 3, rootFret + 2],
+      fingers: [0, 0, 1, 2, 4, 3],
+      barres: [],
+      label: 'D-shape triad',
+      categories: ['triad'],
+      difficulty: 2,
+      canonicalRank: 27,
+      positionScore: (rootFret || 1) + 0.25
+    },
+    min: {
+      frets: [-1, -1, rootFret, rootFret + 2, rootFret + 3, rootFret + 1],
+      fingers: [0, 0, 1, 3, 4, 2],
+      barres: [],
+      label: 'Dm-shape triad',
+      categories: ['triad'],
+      difficulty: 2,
+      canonicalRank: 28,
+      positionScore: (rootFret || 1) + 0.25
+    },
+    '7': {
+      frets: [-1, -1, rootFret, -1, rootFret + 1, rootFret + 2],
+      fingers: [0, 0, 1, 0, 2, 3],
+      barres: [],
+      label: 'D7-shape shell',
+      categories: ['shell', 'seventh'],
+      difficulty: 1,
+      canonicalRank: 29,
+      positionScore: (rootFret || 1) + 0.3
+    },
+    min7: {
+      frets: [-1, -1, rootFret, -1, rootFret + 1, rootFret + 1],
+      fingers: [0, 0, 1, 0, 2, 2],
+      barres: [{ fret: rootFret + 1, fromString: 2, toString: 1, finger: 2 }],
+      label: 'Dm7-shape shell',
+      categories: ['shell', 'seventh'],
+      difficulty: 1,
+      canonicalRank: 30,
+      positionScore: (rootFret || 1) + 0.3
+    },
+    maj7: {
+      frets: [-1, -1, rootFret, -1, rootFret + 2, rootFret + 2],
+      fingers: [0, 0, 1, 0, 2, 3],
+      barres: [],
+      label: 'Dmaj7-shape shell',
+      categories: ['shell', 'seventh'],
+      difficulty: 1,
+      canonicalRank: 31,
+      positionScore: (rootFret || 1) + 0.25
+    },
+    sus2: {
+      frets: [-1, -1, rootFret, rootFret + 2, rootFret + 3, rootFret],
+      fingers: [0, 0, 1, 2, 4, 1],
+      barres: [],
+      label: 'Dsus2-shape triad',
+      categories: ['triad', 'sus/add'],
+      difficulty: 2,
+      canonicalRank: 32,
+      positionScore: (rootFret || 1) + 0.2
+    },
+    sus4: {
+      frets: [-1, -1, rootFret, rootFret + 2, rootFret + 3, rootFret + 3],
+      fingers: [0, 0, 1, 2, 3, 3],
+      barres: [{ fret: rootFret + 3, fromString: 2, toString: 1, finger: 3 }],
+      label: 'Dsus4-shape triad',
+      categories: ['triad', 'sus/add'],
+      difficulty: 2,
+      canonicalRank: 32,
+      positionScore: (rootFret || 1) + 0.2
+    },
+  };
+
+  const config = configs[quality];
+  if (!config) return null;
+  return buildMovableShape({
+    id: `${buildChordId(rootPitchClass, quality)}-fourth-root`,
     pitchClass: rootPitchClass,
     quality,
     ...config
@@ -252,7 +400,7 @@ export function getCandidateShapesForChord(chord, library, enabledCategories) {
     candidates.push(cloneShape(shape, chord.id, chord.label));
   }
 
-  const movableFactories = [makeFifthStringBarre, makeSixthStringBarre];
+  const movableFactories = [makeFifthStringBarre, makeSixthStringBarre, makeFourthStringShape];
   for (const buildShape of movableFactories) {
     const shape = buildShape(chord.pitchClass, chord.quality);
     if (!shape) continue;

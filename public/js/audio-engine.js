@@ -37,6 +37,68 @@ export const GROOVES = [
     }
   },
   {
+    id: 'indie-bounce',
+    label: 'Indie Bounce',
+    meter: '4/4',
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    pattern: {
+      kick: [0, 5, 8, 11, 14],
+      snare: [4, 12],
+      hat: [0, 2, 4, 6, 8, 10, 12, 14],
+      shaker: [3, 7, 11, 15],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 3, accent: 0.44, reverse: true },
+        { step: 6, accent: 0.58, reverse: false },
+        { step: 8, accent: 0.82, reverse: false },
+        { step: 11, accent: 0.42, reverse: true },
+        { step: 14, accent: 0.52, reverse: false }
+      ]
+    }
+  },
+  {
+    id: 'anthem-drive',
+    label: 'Anthem Drive',
+    meter: '4/4',
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    pattern: {
+      kick: [0, 6, 8, 10],
+      snare: [4, 12],
+      hat: [0, 2, 4, 6, 8, 10, 12, 14],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 2, accent: 0.42, reverse: false },
+        { step: 6, accent: 0.56, reverse: true },
+        { step: 8, accent: 0.9, reverse: false },
+        { step: 10, accent: 0.48, reverse: true },
+        { step: 14, accent: 0.62, reverse: false }
+      ]
+    }
+  },
+  {
+    id: 'laid-back-soul',
+    label: 'Laid Back Soul',
+    meter: '4/4',
+    beatsPerBar: 4,
+    subdivisionsPerBeat: 4,
+    pattern: {
+      kick: [0, 9],
+      snare: [4, 12],
+      hat: [0, 2, 4, 6, 8, 10, 12, 14],
+      shaker: [2, 6, 10, 14],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 4, accent: 0.52, reverse: false },
+        { step: 7, accent: 0.36, reverse: true },
+        { step: 10, accent: 0.38, reverse: false },
+        { step: 12, accent: 0.72, reverse: true },
+        { step: 15, accent: 0.34, reverse: false }
+      ]
+    }
+  },
+  {
     id: 'waltz',
     label: 'Waltz',
     meter: '3/4',
@@ -50,6 +112,47 @@ export const GROOVES = [
         { step: 0, accent: 1, reverse: false },
         { step: 4, accent: 0.58, reverse: false },
         { step: 8, accent: 0.58, reverse: true }
+      ]
+    }
+  },
+  {
+    id: 'country-waltz',
+    label: 'Country Waltz',
+    meter: '3/4',
+    beatsPerBar: 3,
+    subdivisionsPerBeat: 4,
+    pattern: {
+      kick: [0, 8],
+      snare: [4],
+      hat: [0, 2, 4, 6, 8, 10],
+      shaker: [2, 6, 10],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 2, accent: 0.36, reverse: true },
+        { step: 4, accent: 0.62, reverse: false },
+        { step: 8, accent: 0.68, reverse: true },
+        { step: 10, accent: 0.34, reverse: false }
+      ]
+    }
+  },
+  {
+    id: 'brush-waltz',
+    label: 'Brush Waltz',
+    meter: '3/4',
+    beatsPerBar: 3,
+    subdivisionsPerBeat: 4,
+    pattern: {
+      kick: [0],
+      snare: [4, 8],
+      hat: [0, 3, 4, 7, 8, 11],
+      shaker: [1, 5, 9],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 3, accent: 0.34, reverse: true },
+        { step: 4, accent: 0.54, reverse: false },
+        { step: 7, accent: 0.3, reverse: true },
+        { step: 8, accent: 0.54, reverse: false },
+        { step: 11, accent: 0.3, reverse: true }
       ]
     }
   },
@@ -68,6 +171,46 @@ export const GROOVES = [
         { step: 4, accent: 0.5, reverse: true },
         { step: 6, accent: 0.82, reverse: false },
         { step: 10, accent: 0.45, reverse: true }
+      ]
+    }
+  },
+  {
+    id: 'lilting-six-eight',
+    label: 'Lilting 6/8',
+    meter: '6/8',
+    beatsPerBar: 6,
+    subdivisionsPerBeat: 2,
+    pattern: {
+      kick: [0, 5, 6],
+      snare: [4, 10],
+      hat: [0, 2, 4, 6, 8, 10],
+      shaker: [1, 3, 7, 9, 11],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 2, accent: 0.42, reverse: true },
+        { step: 4, accent: 0.5, reverse: false },
+        { step: 6, accent: 0.84, reverse: false },
+        { step: 8, accent: 0.38, reverse: true },
+        { step: 10, accent: 0.44, reverse: false }
+      ]
+    }
+  },
+  {
+    id: 'ballad-six-eight',
+    label: 'Ballad 6/8',
+    meter: '6/8',
+    beatsPerBar: 6,
+    subdivisionsPerBeat: 2,
+    pattern: {
+      kick: [0, 6],
+      snare: [4, 10],
+      hat: [0, 2, 4, 6, 8, 10],
+      chordStrums: [
+        { step: 0, accent: 1, reverse: false },
+        { step: 3, accent: 0.3, reverse: true },
+        { step: 6, accent: 0.76, reverse: false },
+        { step: 9, accent: 0.28, reverse: true },
+        { step: 10, accent: 0.42, reverse: false }
       ]
     }
   }

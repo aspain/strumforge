@@ -1,6 +1,8 @@
 import { buildChordDefinition, listPitchClasses } from './music-theory.js';
 import { getPlayableChordChoices } from './chord-library.js';
 
+export const NO_PLAYABLE_LOOP_WARNING = 'No playable loop with the current voicing filters.';
+
 export const PROGRESSION_TEMPLATES = {
   major: [
     { id: 'anthem-rise', degrees: [1, 5, 6, 4], weight: 1.4 },
@@ -69,6 +71,85 @@ function buildVariationChoices(baseChord, enabledCategories) {
   return choices;
 }
 
+function dedupe(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function preferredQualityOrder(baseChord, enabledCategories, previousQuality, strategy) {
+  const categories = enabledCategories instanceof Set ? enabledCategories : new Set(enabledCategories);
+
+  if (strategy !== 'reharmonize') {
+    return dedupe([
+      previousQuality,
+      baseChord.quality,
+      categories.has('seventh') && (previousQuality === '7' || previousQuality === 'maj7' || previousQuality === 'min7')
+        ? previousQuality
+        : null,
+      categories.has('power') ? '5' : null,
+      categories.has('seventh') && baseChord.quality === 'maj' && baseChord.degree === 5 ? '7' : null,
+      categories.has('seventh') && baseChord.quality === 'maj' ? 'maj7' : null,
+      categories.has('seventh') && baseChord.quality === 'min' ? 'min7' : null,
+      categories.has('sus/add') ? 'add9' : null,
+      categories.has('sus/add') ? 'sus2' : null,
+      categories.has('sus/add') ? 'sus4' : null
+    ]);
+  }
+
+  if (baseChord.quality === 'maj') {
+    if (baseChord.degree === 5) {
+      return dedupe([
+        categories.has('seventh') ? '7' : null,
+        categories.has('sus/add') ? 'sus4' : null,
+        categories.has('sus/add') ? 'add9' : null,
+        categories.has('sus/add') ? 'sus2' : null,
+        categories.has('power') ? '5' : null,
+        categories.has('seventh') ? 'maj7' : null,
+        baseChord.quality,
+        previousQuality
+      ]);
+    }
+
+    if (baseChord.degree === 1 || baseChord.degree === 4) {
+      return dedupe([
+        categories.has('sus/add') ? 'add9' : null,
+        categories.has('seventh') ? 'maj7' : null,
+        categories.has('sus/add') ? 'sus2' : null,
+        categories.has('sus/add') ? 'sus4' : null,
+        categories.has('power') ? '5' : null,
+        baseChord.quality,
+        previousQuality
+      ]);
+    }
+
+    return dedupe([
+      categories.has('seventh') ? 'maj7' : null,
+      categories.has('power') ? '5' : null,
+      baseChord.quality,
+      previousQuality
+    ]);
+  }
+
+  if (baseChord.quality === 'min') {
+    return dedupe([
+      categories.has('seventh') ? 'min7' : null,
+      categories.has('power') && baseChord.degree !== 3 ? '5' : null,
+      baseChord.quality,
+      previousQuality
+    ]);
+  }
+
+  return dedupe([previousQuality, baseChord.quality]);
+}
+
+function selectDeterministicChoice(playableChoices, baseChord, enabledCategories, previousQuality, strategy) {
+  const preferredQualities = preferredQualityOrder(baseChord, enabledCategories, previousQuality, strategy);
+  for (const quality of preferredQualities) {
+    const match = playableChoices.find((choice) => choice.quality === quality);
+    if (match) return match;
+  }
+  return playableChoices[0];
+}
+
 function finalizeChord(chord) {
   return buildChordDefinition(chord.rootPitchClass, chord.mode, chord.degree, chord.quality);
 }
@@ -132,7 +213,7 @@ export function generateProgression(state, library, rng = Math.random) {
 
   if (!feasiblePlans.length) {
     return {
-      warning: 'No playable progression exists for the selected shape filters. Re-enable open, barre, or seventh shapes.'
+      warning: NO_PLAYABLE_LOOP_WARNING
     };
   }
 
@@ -149,6 +230,60 @@ export function generateProgression(state, library, rng = Math.random) {
     keyRoot: selectedPlan.rootPitchClass,
     mode: selectedPlan.mode,
     templateId: selectedPlan.template.id,
+    chords,
+    warning: ''
+  };
+}
+
+export function rebuildProgression(existingProgression, state, library) {
+  if (!existingProgression?.chords?.length) {
+    return generateProgression(state, library);
+  }
+
+  const enabledCategories = state.enabledCategories instanceof Set
+    ? state.enabledCategories
+    : new Set(state.enabledCategories);
+  const targetMode = state.modePreference === 'auto' ? existingProgression.mode : state.modePreference;
+  const targetRoot = state.keyLocked ? state.keyRoot : existingProgression.keyRoot;
+  const strategy = state.rebuildStrategy === 'reharmonize' ? 'reharmonize' : 'preserve';
+
+  const chords = [];
+  for (const previousChord of existingProgression.chords) {
+    const baseChord = {
+      rootPitchClass: targetRoot,
+      mode: targetMode,
+      degree: previousChord.degree,
+      quality: buildChordDefinition(targetRoot, targetMode, previousChord.degree).quality
+    };
+    const playableChoices = getPlayableChordChoices(
+      buildVariationChoices(baseChord, enabledCategories).map(finalizeChord),
+      library,
+      enabledCategories
+    );
+
+    if (!playableChoices.length) {
+      return {
+        warning: NO_PLAYABLE_LOOP_WARNING
+      };
+    }
+
+    const winner = selectDeterministicChoice(
+      playableChoices,
+      baseChord,
+      enabledCategories,
+      previousChord.quality,
+      strategy
+    );
+    chords.push({
+      ...winner,
+      theoryChip: `${winner.numeral} • ${winner.functionLabel}`
+    });
+  }
+
+  return {
+    keyRoot: targetRoot,
+    mode: targetMode,
+    templateId: existingProgression.templateId,
     chords,
     warning: ''
   };

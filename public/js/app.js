@@ -2,7 +2,7 @@ import { AudioEngine, GROOVES } from './audio-engine.js';
 import { loadChordLibrary, selectShapeSequence } from './chord-library.js';
 import { renderChordDiagram } from './chord-diagram.js';
 import { FRIENDLY_NOTES, pitchClassToNote } from './music-theory.js';
-import { generateProgression } from './progression-engine.js';
+import { generateProgression, rebuildProgression, NO_PLAYABLE_LOOP_WARNING } from './progression-engine.js';
 
 const state = {
   keyLocked: false,
@@ -19,6 +19,8 @@ const state = {
   progression: null,
   shapeOverrides: {}
 };
+
+const HARMONY_CATEGORIES = new Set(['seventh', 'sus/add', 'power']);
 
 const elements = {
   currentKeyLabel: document.getElementById('current-key-label'),
@@ -129,27 +131,31 @@ function updateTransportButton(isPlaying) {
   elements.transportButton.setAttribute('aria-pressed', String(isPlaying));
 }
 
-function renderEmptyProgression(message) {
+function renderEmptyProgression({
+  title = 'No playable loop with the current voicing filters'
+} = {}) {
   setActiveChord(-1);
   audioEngine.setChordSequence([]);
-  elements.progressionKeyDisplay.innerHTML = `
-    <span class="progression-key-label">Key</span>
-    <strong class="progression-key-title">Unavailable</strong>
-    <span class="progression-loop-name">Progression: ${message}</span>
-  `;
+  elements.progressionKeyDisplay.innerHTML = '';
+  elements.progressionKeyDisplay.classList.add('is-hidden');
+  elements.progressionGrid.classList.add('progression-grid-empty');
   elements.progressionGrid.innerHTML = `
-    <article class="chord-card">
-      <div class="card-header">
-        <div class="card-title-row">
-          <h3>—</h3>
-          <span class="voicing-chip">No voicing</span>
+    <article class="chord-card empty-state-card">
+      <div class="card-header empty-state-header">
+        <div class="card-title-row empty-state-title-row">
+          <h3>${title}</h3>
         </div>
-        <div class="card-meta"><span class="theory-chip">No playable loop</span></div>
       </div>
-      <div class="diagram-wrap"></div>
-      <div class="card-actions">
-        <button class="preview-chord" type="button" disabled>Play</button>
-        <button class="swap-shape" type="button" disabled>Adjust filters</button>
+      <div class="empty-state-visual" aria-hidden="true">
+        <div class="empty-state-fretboard">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="empty-state-pulse"></div>
       </div>
     </article>
   `;
@@ -157,7 +163,7 @@ function renderEmptyProgression(message) {
 
 function renderProgression() {
   if (!state.progression || !state.progression.chords?.length) {
-    renderEmptyProgression('Choose more shape categories to create a loop.');
+    renderEmptyProgression();
     updateStatusLine();
     return;
   }
@@ -165,13 +171,17 @@ function renderProgression() {
   const selectedShapes = getSelectedShapes();
 
   if (!selectedShapes) {
-    updateWarning('The selected shape filters cannot voice the current loop. Generate a new one.');
-    renderEmptyProgression('Current loop is not playable with these filters.');
+    updateWarning(NO_PLAYABLE_LOOP_WARNING);
+    renderEmptyProgression({
+      title: NO_PLAYABLE_LOOP_WARNING
+    });
     updateStatusLine();
     return;
   }
 
   audioEngine.setChordSequence(selectedShapes.selected);
+  elements.progressionKeyDisplay.classList.remove('is-hidden');
+  elements.progressionGrid.classList.remove('progression-grid-empty');
   elements.progressionKeyDisplay.innerHTML = `
     <span class="progression-key-label">Key</span>
     <strong class="progression-key-title">${formatKeyLabel(state.progression.keyRoot, state.progression.mode)}</strong>
@@ -242,31 +252,64 @@ function readEnabledCategories() {
   );
 }
 
+function applyShapeFilters() {
+  state.shapeOverrides = {};
+  if (!state.progression) {
+    regenerateProgression();
+    return;
+  }
+  renderProgression();
+}
+
+function refreshProgression(rebuildStrategy = 'preserve') {
+  if (!state.progression || !chordLibrary) return;
+  state.shapeOverrides = {};
+  const result = rebuildProgression(
+    state.progression,
+    { ...state, rebuildStrategy },
+    chordLibrary
+  );
+  if (result.warning) {
+    state.progression = null;
+    updateWarning(result.warning);
+    renderProgression();
+    return;
+  }
+
+  state.progression = result;
+  updateWarning('');
+  renderProgression();
+}
+
 function attachEventListeners() {
   syncTransportMode();
   elements.generateButton.addEventListener('click', regenerateProgression);
   elements.keyLockToggle.addEventListener('change', () => {
     state.keyLocked = elements.keyLockToggle.checked;
     elements.keyRootSelect.disabled = !state.keyLocked;
-    regenerateProgression();
+    refreshProgression('preserve');
   });
 
   elements.keyRootSelect.addEventListener('change', () => {
     state.keyRoot = Number(elements.keyRootSelect.value);
-    regenerateProgression();
+    refreshProgression('preserve');
   });
 
   document.querySelectorAll('input[name="mode-preference"]').forEach((node) => {
     node.addEventListener('change', () => {
       state.modePreference = document.querySelector('input[name="mode-preference"]:checked').value;
-      regenerateProgression();
+      refreshProgression('preserve');
     });
   });
 
   document.querySelectorAll('input[name="shape-category"]').forEach((node) => {
     node.addEventListener('change', () => {
       readEnabledCategories();
-      regenerateProgression();
+      if (HARMONY_CATEGORIES.has(node.value)) {
+        refreshProgression('reharmonize');
+        return;
+      }
+      applyShapeFilters();
     });
   });
 
@@ -346,6 +389,8 @@ async function init() {
 
 init().catch((error) => {
   updateWarning('Failed to load chord data.');
-  renderEmptyProgression('Reload the page to try again.');
+  renderEmptyProgression({
+    title: 'Chord data did not load'
+  });
   console.error(error);
 });

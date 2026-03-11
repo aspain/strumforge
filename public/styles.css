@@ -384,6 +384,24 @@ input[type='radio'] {
   margin-top: -4px;
 }
 
+.voicings-block {
+  align-content: start;
+}
+
+.checkbox-field-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 6px;
+}
+
+.checkbox-field-group + .checkbox-field-group {
+  margin-top: 8px;
+}
+
+.checkbox-field-group-compact {
+  grid-template-columns: repeat(2, minmax(0, 168px));
+}
+
 .checkbox-field label {
   display: flex;
   align-items: center;
@@ -397,7 +415,7 @@ input[type='radio'] {
 }
 
 .checkbox-field legend {
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .inline-warning {
@@ -422,6 +440,10 @@ input[type='radio'] {
   align-content: start;
   width: 190px;
   padding: 2px 6px 0 4px;
+}
+
+.progression-key.is-hidden {
+  display: none;
 }
 
 .progression-key-label {
@@ -457,6 +479,11 @@ input[type='radio'] {
   margin: 0 auto;
 }
 
+.progression-grid.progression-grid-empty {
+  width: min(100%, 760px);
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .chord-card {
   display: grid;
   grid-template-rows: auto auto 1fr auto;
@@ -468,6 +495,36 @@ input[type='radio'] {
   overflow: hidden;
   min-height: 300px;
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.empty-state-card {
+  grid-template-rows: auto auto auto;
+  gap: 12px;
+  min-height: 250px;
+  padding: 18px 20px 20px;
+  background:
+    radial-gradient(circle at top right, rgba(214, 179, 145, 0.24), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(244, 235, 223, 0.92));
+}
+
+.empty-state-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 84px;
+  padding-top: 4px;
+}
+
+.empty-state-title-row {
+  display: block;
+  width: 100%;
+}
+
+.empty-state-title-row h3 {
+  margin: 0 auto;
+  max-width: 26ch;
+  text-align: center;
 }
 
 .chord-card.playing {
@@ -556,6 +613,53 @@ input[type='radio'] {
   height: 236px;
   min-height: 236px;
   padding: 2px 0 0;
+}
+
+.empty-state-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 126px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(231, 215, 198, 0.5));
+  overflow: hidden;
+}
+
+.empty-state-fretboard {
+  position: relative;
+  width: min(100%, 420px);
+  height: 84px;
+  border-radius: 18px;
+  border: 1px solid rgba(96, 61, 36, 0.1);
+  background:
+    linear-gradient(90deg, rgba(96, 61, 36, 0.06) 0, rgba(96, 61, 36, 0.06) 1px, transparent 1px) 0 0 / 20% 100%,
+    linear-gradient(180deg, rgba(96, 61, 36, 0.08), rgba(96, 61, 36, 0.03));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.empty-state-fretboard span {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  height: 1.5px;
+  background: rgba(43, 28, 17, 0.26);
+}
+
+.empty-state-fretboard span:nth-child(1) { top: 15px; }
+.empty-state-fretboard span:nth-child(2) { top: 26px; }
+.empty-state-fretboard span:nth-child(3) { top: 37px; }
+.empty-state-fretboard span:nth-child(4) { top: 48px; }
+.empty-state-fretboard span:nth-child(5) { top: 59px; }
+.empty-state-fretboard span:nth-child(6) { top: 70px; }
+
+.empty-state-pulse {
+  position: absolute;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(180, 110, 48, 0.22) 0 22%, rgba(180, 110, 48, 0.08) 22% 48%, transparent 48%);
+  filter: blur(1px);
 }
 
 .chord-diagram {
@@ -730,6 +834,10 @@ input[type='range'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .progression-grid.progression-grid-empty {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .status-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -845,6 +953,11 @@ input[type='range'] {
     gap: 6px;
   }
 
+  .empty-state-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
   .chord-card h3 {
     font-size: clamp(18px, 1.35vw, 22px);
   }
@@ -878,6 +991,15 @@ input[type='range'] {
     grid-template-columns: 1fr;
   }
 
+  .progression-grid.progression-grid-empty {
+    width: 100%;
+  }
+
+  .checkbox-field-group,
+  .checkbox-field-group-compact {
+    grid-template-columns: 1fr;
+  }
+
   .segmented {
     grid-template-columns: 1fr;
   }
@@ -898,6 +1020,10 @@ input[type='range'] {
 
   .inline-mode-segmented {
     grid-template-columns: 1fr;
+  }
+
+  .empty-state-fretboard {
+    width: 100%;
   }
 }
 
