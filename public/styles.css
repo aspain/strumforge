@@ -70,6 +70,9 @@ select:focus-visible {
   min-height: 100svh;
   margin: 0 auto;
   padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .eyebrow,
@@ -112,6 +115,19 @@ select:focus-visible {
 .app-shell {
   display: grid;
   gap: 10px;
+  flex: 1;
+}
+
+.page-footer {
+  margin-top: auto;
+  padding: 4px 8px 10px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.page-footer a {
+  color: inherit;
 }
 
 .panel {
