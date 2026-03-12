@@ -86,6 +86,7 @@ select:focus-visible {
   font-weight: 800;
 }
 
+.panel h1,
 .panel h2,
 .control-block h3 {
   margin: 0;
@@ -116,6 +117,7 @@ select:focus-visible {
   display: grid;
   gap: 10px;
   flex: 1;
+  align-content: start;
 }
 
 .page-footer {
@@ -128,6 +130,19 @@ select:focus-visible {
 
 .page-footer a {
   color: inherit;
+}
+
+.noscript-copy {
+  width: min(720px, calc(100% - 24px));
+  margin: 0 auto 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 251, 246, 0.94);
+  border: 1px solid rgba(96, 61, 36, 0.12);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .panel {
@@ -156,6 +171,7 @@ select:focus-visible {
   align-items: end;
 }
 
+.panel h1,
 .panel h2 {
   font-size: clamp(20px, 1.5vw, 28px);
   line-height: 1;
@@ -498,14 +514,6 @@ input[type='radio'] {
   color: var(--ink);
 }
 
-.progression-loop-name {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: capitalize;
-  white-space: nowrap;
-}
-
 .progression-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(206px, 246px));
@@ -826,26 +834,23 @@ input[type='radio'] {
     position: static;
     min-height: 0;
     display: grid;
-    grid-template-columns: minmax(176px, 208px) minmax(0, 1fr);
-    align-items: start;
-    gap: 18px;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .progression-key {
     position: static;
-    width: auto;
-    gap: 5px;
-    padding: 6px 0 0 4px;
-  }
-
-  .progression-loop-name {
-    white-space: normal;
-    line-height: 1.15;
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px;
+    padding: 0 4px;
   }
 
   .progression-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
     width: 100%;
     margin: 0;
   }
@@ -856,18 +861,18 @@ input[type='radio'] {
 
   .chord-card:not(.empty-state-card) {
     width: 100%;
-    max-width: 364px;
+    max-width: 280px;
     justify-self: center;
-    --card-stage-width: min(calc(100% - 28px), 324px);
-    --card-chip-row-height: 18px;
-    --card-title-row-height: 18px;
+    --card-stage-width: min(calc(100% - 22px), 220px);
+    --card-chip-row-height: 16px;
+    --card-title-row-height: 16px;
     --card-header-gap: 1px;
-    --diagram-top-pull: 18px;
-    --card-action-gap: 6px;
-    --card-action-font-size: 9px;
-    --card-action-padding-block: 5px;
-    --card-action-padding-inline: 12px;
-    padding: 12px 14px 14px;
+    --diagram-top-pull: 12px;
+    --card-action-gap: 4px;
+    --card-action-font-size: 8px;
+    --card-action-padding-block: 4px;
+    --card-action-padding-inline: 9px;
+    padding: 8px 9px 10px;
   }
 
   .chord-card:not(.empty-state-card) .card-header {
@@ -876,19 +881,47 @@ input[type='radio'] {
 
   .chord-card:not(.empty-state-card) .theory-chip,
   .chord-card:not(.empty-state-card) .voicing-chip {
-    font-size: 8px;
-    padding: 4px 8px;
+    font-size: 7px;
+    padding: 4px 6px;
   }
 
   .chord-diagram {
-    width: min(100%, 238px);
+    width: min(100%, 188px);
   }
 
 }
 
 @media (min-width: 1261px) {
+  .progression-body {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .progression-key {
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 6px;
+    width: 100%;
+    padding: 0 4px;
+    text-align: left;
+  }
+
+  .progression-key-label {
+    font-size: 8px;
+    letter-spacing: 0.14em;
+  }
+
+  .progression-key-title {
+    font-size: 20px;
+    line-height: 0.98;
+  }
+
   .progression-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    margin: 0;
   }
 }
 
@@ -898,7 +931,7 @@ input[type='radio'] {
   }
 
   .progression-body {
-    grid-template-columns: minmax(188px, 224px) minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .progression-grid {
@@ -1092,9 +1125,14 @@ input[type='range'] {
     font-size: 12px;
   }
 
+  .panel h1,
   .panel h2 {
     font-size: 18px;
     line-height: 0.95;
+  }
+
+  .noscript-copy {
+    font-size: 12px;
   }
 
   .control-block h3 {
@@ -1198,17 +1236,9 @@ input[type='range'] {
     line-height: 0.98;
   }
 
-  .progression-loop-name {
-    min-width: 0;
-    font-size: 10px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .progression-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
     width: 100%;
   }
 
@@ -1216,11 +1246,11 @@ input[type='range'] {
     --card-chip-row-height: 16px;
     --card-title-row-height: 14px;
     --card-header-gap: 1px;
-    --diagram-top-pull: 12px;
+    --diagram-top-pull: 10px;
     min-height: 0;
-    padding: 8px;
-    gap: 6px;
-    border-radius: 20px;
+    padding: 7px 6px;
+    gap: 5px;
+    border-radius: 18px;
   }
 
   .card-header {
@@ -1229,11 +1259,11 @@ input[type='range'] {
   }
 
   .chord-card h3 {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .chord-diagram {
-    width: min(100%, 128px);
+    width: min(100%, 112px);
   }
 
   .card-actions {
@@ -1249,7 +1279,7 @@ input[type='range'] {
   .theory-chip,
   .voicing-chip {
     font-size: 7px;
-    padding: 4px 7px;
+    padding: 4px 6px;
     max-width: 100%;
     white-space: nowrap;
   }
@@ -1301,6 +1331,7 @@ input[type='range'] {
     gap: 6px;
   }
 
+  .panel h1,
   .panel h2 {
     font-size: clamp(18px, 1.3vw, 24px);
   }
@@ -1321,16 +1352,18 @@ input[type='range'] {
     position: static;
     min-height: 0;
     display: grid;
-    grid-template-columns: minmax(160px, 188px) minmax(0, 1fr);
-    align-items: start;
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .progression-key {
     position: static;
-    width: auto;
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: baseline;
     gap: 5px;
-    padding: 6px 0 0 4px;
+    padding: 0 2px;
   }
 
   .progression-key-title {
@@ -1351,27 +1384,27 @@ input[type='range'] {
   }
 
   .progression-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
     width: 100%;
     margin: 0;
   }
 
   .chord-card:not(.empty-state-card) {
     width: 100%;
-    max-width: 340px;
+    max-width: 256px;
     justify-self: center;
-    --card-stage-width: min(calc(100% - 28px), 300px);
-    --card-chip-row-height: 18px;
-    --card-title-row-height: 18px;
+    --card-stage-width: min(calc(100% - 22px), 206px);
+    --card-chip-row-height: 16px;
+    --card-title-row-height: 16px;
     --card-header-gap: 1px;
-    --diagram-top-pull: 15px;
+    --diagram-top-pull: 10px;
   }
 
   .chord-card {
-    min-height: 230px;
-    padding: 10px 12px 12px;
-    gap: 6px;
+    min-height: 210px;
+    padding: 8px 9px 10px;
+    gap: 5px;
   }
 
   .empty-state-card {
@@ -1384,19 +1417,47 @@ input[type='range'] {
   }
 
   .chord-diagram {
-    width: min(100%, 208px);
+    width: min(100%, 174px);
   }
 
   .theory-chip,
   .voicing-chip {
-    font-size: 8px;
-    padding: 5px 8px;
+    font-size: 7px;
+    padding: 4px 6px;
   }
 }
 
 @media (max-height: 900px) and (min-width: 1261px) {
+  .progression-body {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .progression-key {
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 5px;
+    width: 100%;
+    padding: 0 2px;
+    text-align: left;
+  }
+
+  .progression-key-label {
+    font-size: 8px;
+    letter-spacing: 0.14em;
+  }
+
+  .progression-key-title {
+    font-size: 20px;
+    line-height: 0.98;
+  }
+
   .progression-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    margin: 0;
   }
 }
 
@@ -1441,6 +1502,7 @@ input[type='range'] {
     border-radius: 18px;
   }
 
+  .panel h1,
   .panel h2 {
     font-size: 16px;
     line-height: 0.96;
@@ -1675,15 +1737,6 @@ input[type='range'] {
     line-height: 0.98;
   }
 
-  .progression-loop-name {
-    min-width: 0;
-    font-size: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: left;
-  }
-
   .progression-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 7px;
@@ -1812,6 +1865,7 @@ input[type='range'] {
     gap: 4px;
   }
 
+  .panel h1,
   .panel h2 {
     font-size: 14px;
   }
@@ -1869,10 +1923,6 @@ input[type='range'] {
 
   .progression-key-title {
     font-size: 14px;
-  }
-
-  .progression-loop-name {
-    font-size: 7px;
   }
 
   .chord-card {

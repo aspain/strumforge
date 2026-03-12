@@ -3,18 +3,61 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>chord-muse</title>
+  <title>Chord Muse | Guitar Chord Progression Generator</title>
   <meta
     name="description"
-    content="Generate guitar-friendly chord progressions with playable fretboard diagrams, a metronome, and simple drum grooves."
+    content="Chord Muse is a free guitar chord progression generator with playable fretboard diagrams, tempo control, left-handed mode, and built-in drum grooves for practice."
   />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
   <meta name="theme-color" content="#f3ede3" />
+  <link rel="canonical" href="https://adamspain.com/chord-muse" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="chord-muse" />
+  <meta property="og:site_name" content="Adam Spain" />
+  <meta property="og:title" content="Chord Muse | Guitar Chord Progression Generator" />
   <meta
     property="og:description"
-    content="A compact chord progression generator for guitar players, with diagrams and rhythm tools in one screen."
+    content="Generate playable guitar chord progressions with chord diagrams, groove controls, and practice-ready rhythm tools in one screen."
   />
+  <meta property="og:url" content="https://adamspain.com/chord-muse" />
+  <meta property="og:image" content="https://adamspain.com/chord-muse/chord-muse-preview.png" />
+  <meta property="og:image:alt" content="Chord Muse guitar chord progression generator interface" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Chord Muse | Guitar Chord Progression Generator" />
+  <meta
+    name="twitter:description"
+    content="A free browser-based guitar progression generator with fretboard diagrams, metronome controls, and drum grooves."
+  />
+  <meta name="twitter:image" content="https://adamspain.com/chord-muse/chord-muse-preview.png" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Chord Muse",
+      "url": "https://adamspain.com/chord-muse",
+      "description": "A free browser-based guitar chord progression generator with playable fretboard diagrams, tempo control, groove selection, and left-handed support.",
+      "applicationCategory": "MusicApplication",
+      "operatingSystem": "Any",
+      "image": "https://adamspain.com/chord-muse/chord-muse-preview.png",
+      "browserRequirements": "Requires JavaScript and a modern web browser.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Person",
+        "name": "Adam Spain",
+        "url": "https://adamspain.com"
+      },
+      "featureList": [
+        "Generate playable four-chord guitar progressions",
+        "Show fretboard diagrams for each chord",
+        "Filter open, barre, triad, and power chord shapes",
+        "Practice with tempo controls and drum grooves",
+        "Flip diagrams for left-handed guitar players"
+      ]
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
@@ -26,8 +69,8 @@
       <section class="panel control-deck" aria-labelledby="controls-heading">
         <div class="panel-heading deck-heading">
           <div>
-            <p class="panel-kicker">chord-muse</p>
-            <h2 id="controls-heading">Playable progressions, right in the pocket.</h2>
+            <p class="panel-kicker">Chord Muse</p>
+            <h1 id="controls-heading">Generate playable guitar chord progressions, right in the pocket.</h1>
           </div>
         </div>
 
@@ -169,6 +212,13 @@
       Powered by <a href="https://github.com/aspain/chord-muse">aspain/chord-muse</a>.
     </footer>
   </div>
+
+  <noscript>
+    <p class="noscript-copy">
+      Chord Muse uses JavaScript to generate guitar chord progressions and render fretboard diagrams in the browser.
+      Enable JavaScript to use the progression generator, tempo controls, and drum grooves.
+    </p>
+  </noscript>
 
   <script type="module" src="./js/app.js"></script>
 </body>

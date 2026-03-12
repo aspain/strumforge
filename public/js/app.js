@@ -208,9 +208,7 @@ function renderProgression() {
   elements.progressionKeyDisplay.classList.remove('is-hidden');
   elements.progressionGrid.classList.remove('progression-grid-empty');
   elements.progressionKeyDisplay.innerHTML = `
-    <span class="progression-key-label">Key</span>
     <strong class="progression-key-title">${formatKeyLabel(state.progression.keyRoot, state.progression.mode)}</strong>
-    <span class="progression-loop-name">Progression: ${state.progression.templateId.replaceAll('-', ' ')}</span>
   `;
   elements.progressionGrid.innerHTML = state.progression.chords.map((chord, index) => {
     const shape = selectedShapes.selected[index];
