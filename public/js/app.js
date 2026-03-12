@@ -208,13 +208,11 @@ function renderProgression() {
     return `
       <article class="chord-card${index === state.activeChordIndex && state.playChords ? ' playing' : ''}" data-chord-card="${index}">
         <div class="card-header">
-          <div class="card-title-row">
-            <h3>${chord.label}</h3>
+          <div class="card-chip-row">
+            <span class="theory-chip card-chip-inline">${chord.theoryChip}</span>
             <span class="voicing-chip card-chip-inline">${shape.label}</span>
           </div>
-          <div class="card-topline">
-            <span class="theory-chip card-chip-inline">${chord.theoryChip}</span>
-          </div>
+          <h3>${chord.label}</h3>
         </div>
         <div class="diagram-wrap">${renderChordDiagram(shape, { leftHanded: state.leftHanded })}</div>
         <div class="card-actions">

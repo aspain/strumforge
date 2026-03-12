@@ -119,7 +119,7 @@ export function renderChordDiagram(shape, options = {}) {
   )).join('');
 
   return `
-    <svg viewBox="0 0 132 ${viewBoxHeight}" class="chord-diagram" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 144 ${viewBoxHeight}" class="chord-diagram" aria-hidden="true" focusable="false">
       ${baseFretText}
       ${strings}
       ${frets}
