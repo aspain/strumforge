@@ -1,25 +1,20 @@
 # chord-muse
 
-`chord-muse` is a compact GitHub Pages site for guitar players who want a musically coherent random chord loop, readable fretboard diagrams, and a practice clock in the same view.
+`chord-muse` is a simple practice tool for guitar players.
 
-## Features
+It gives you a playable 4-chord loop, shows you chord diagrams, and lets you practice with a built-in groove.
 
-- Theory-weighted 4-chord progressions in major and natural minor keys
-- Guitar-first chord cards with SVG diagrams, finger numbers, open/muted strings, and alternate shape cycling
-- Beginner-friendly chord-shape filters for open, barre, triad, and power chords, plus optional seventh and suspended/add9 flavor
-- Global canonical vs. best-fit shape selection plus a left-handed mirror toggle
-- Expanded metronome and drum groove styles for `4/4`, `3/4`, and `6/8`
+## Try it here
 
-## Local use
+[adamspain.com/chord-muse](https://adamspain.com/chord-muse)
 
-No build step is required. Open [public/index.html](/Users/aspain/Documents/git/chord-muse/public/index.html) directly in a browser or serve the `public/` directory.
+![Chord Muse preview](public/chord-muse-preview.png)
 
-## Testing
+## What you can do
 
-```bash
-npm test
-```
-
-## Deployment
-
-GitHub Actions publishes the `public/` directory to GitHub Pages on pushes to `main`.
+- Generate a new chord progression with one button
+- Keep the key fixed or let the app choose one for you
+- Stick to easier shapes like open chords, or add barre, triad, and power chord shapes
+- Turn on sevenths or suspended/add9 chords for more color
+- Play along with drums and a tempo control
+- Flip the diagrams for left-handed players
