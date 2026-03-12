@@ -205,6 +205,10 @@ select:focus-visible {
   gap: 10px;
 }
 
+.rhythm-heading-hidden {
+  opacity: 0;
+}
+
 .status-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -218,6 +222,7 @@ select:focus-visible {
 }
 
 .control-block {
+  --control-rail: 2px;
   display: grid;
   gap: 10px;
   padding: 12px;
@@ -231,10 +236,23 @@ select:focus-visible {
   align-content: start;
 }
 
+.key-block {
+  align-content: start;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+}
+
+.key-block > .key-row {
+  grid-row: 4;
+}
+
+.key-block > .key-generate-button {
+  grid-row: 5;
+}
+
 .control-block-header {
   display: grid;
   gap: 5px;
-  padding: 1px 2px 0;
+  padding: 1px var(--control-rail) 0;
 }
 
 .aligned-control-header {
@@ -276,18 +294,13 @@ select:focus-visible {
   display: grid;
   gap: 6px;
   margin: 0;
-  padding: 0;
-}
-
-.field {
-  padding: 0 2px;
+  padding: 0 var(--control-rail);
 }
 
 .segmented-field,
 .checkbox-field {
   border: 0;
   min-inline-size: 0;
-  padding: 0 2px;
 }
 
 .field-label,
@@ -335,7 +348,7 @@ input[type='number'] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  padding: 0 2px;
+  padding: 0 var(--control-rail);
 }
 
 input[type='checkbox'],
@@ -433,7 +446,7 @@ input[type='radio'] {
   gap: 6px;
   align-content: start;
   width: 190px;
-  padding: 2px 6px 0 4px;
+  padding: 2px 6px 0 12px;
 }
 
 .progression-key.is-hidden {
@@ -771,9 +784,9 @@ input[type='range'] {
 
 .beat-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 112px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 16px;
 }
 
@@ -790,12 +803,12 @@ input[type='range'] {
 
 .beat-row strong {
   display: block;
-  width: 112px;
-  min-width: 112px;
-  text-align: right;
+  width: auto;
+  min-width: 0;
+  text-align: left;
   white-space: nowrap;
   line-height: 1;
-  padding-right: 2px;
+  padding: 0;
 }
 
 .beat-dot {
@@ -843,13 +856,17 @@ input[type='range'] {
   }
 
   .progression-key {
-    padding: 0 2px;
+    padding: 0 2px 0 8px;
   }
 }
 
 @media (max-height: 900px) and (min-width: 1100px) {
   .control-caption {
     display: none;
+  }
+
+  .aligned-control-header {
+    block-size: 33px;
   }
 
   .status-strip,
@@ -875,13 +892,8 @@ input[type='range'] {
     gap: 5px;
   }
 
-  .control-block-header,
-  .field,
-  .segmented-field,
-  .checkbox-field,
-  .toggle-pair {
-    padding-left: 1px;
-    padding-right: 1px;
+  .control-block {
+    --control-rail: 1px;
   }
 
   .control-grid {
@@ -916,7 +928,7 @@ input[type='range'] {
     left: 0;
     width: 168px;
     gap: 5px;
-    padding: 6px 2px 0 0;
+    padding: 6px 2px 0 8px;
   }
 
   .progression-key-title {
