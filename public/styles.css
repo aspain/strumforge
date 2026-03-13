@@ -728,6 +728,7 @@ input[type='radio'] {
   --card-action-font-size: 8px;
   --card-action-padding-block: 4px;
   --card-action-padding-inline: 10px;
+  --card-action-reorder-clearance: 40px;
   --card-translate-x: 0px;
   --card-translate-y: 0px;
   position: relative;
@@ -817,7 +818,8 @@ input[type='radio'] {
   grid-auto-columns: max-content;
   justify-content: center;
   gap: var(--card-action-gap);
-  width: var(--card-stage-width);
+  width: calc(var(--card-stage-width) - var(--card-action-reorder-clearance));
+  max-width: 100%;
   margin-inline: auto;
   padding-top: 2px;
 }
@@ -1014,6 +1016,13 @@ input[type='radio'] {
   font-size: var(--card-action-font-size);
   line-height: 1;
   white-space: nowrap;
+}
+
+.card-actions .swap-shape {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-actions .preview-chord {
@@ -2619,6 +2628,11 @@ input[type='range'] {
   .checkbox-field-group,
   .checkbox-field-group-compact {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  }
+
+  .voicings-block .checkbox-field-group,
+  .voicings-block .checkbox-field-group-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .tempo-inputs {

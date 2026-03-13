@@ -233,6 +233,16 @@ function renderBeatPulse(activeBeat) {
   )).join('');
 }
 
+function useCompactSwapShapeLabel() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 720px)').matches;
+}
+
+function formatSwapShapeLabel(selectedIndex, totalCandidates) {
+  if (totalCandidates < 2) return 'Only shape';
+  const counter = `${selectedIndex + 1}/${totalCandidates}`;
+  return useCompactSwapShapeLabel() ? `Swap (${counter})` : `Swap shape (${counter})`;
+}
+
 function setActiveChord(index) {
   state.activeChordIndex = Number.isInteger(index) ? index : -1;
   elements.progressionGrid.querySelectorAll('[data-chord-card]').forEach((card) => {
@@ -681,7 +691,7 @@ function renderProgression() {
             data-cycle-shape="${index}"
             ${totalCandidates < 2 ? 'disabled' : ''}
           >
-            ${totalCandidates < 2 ? 'Only shape' : `Swap shape (${selectedShapes.selectedIndices[index] + 1}/${totalCandidates})`}
+            ${formatSwapShapeLabel(selectedShapes.selectedIndices[index], totalCandidates)}
           </button>
         </div>
         <button
