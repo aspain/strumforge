@@ -90,6 +90,29 @@ function installAudioPrimer() {
   document.addEventListener('keydown', handleFirstGesture, { once: true });
 }
 
+function installTooltipDismissal() {
+  document.addEventListener('pointerdown', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element) || target.closest('.field-help')) {
+      return;
+    }
+
+    const openHelp = document.activeElement;
+    if (openHelp instanceof HTMLElement && openHelp.classList.contains('field-help')) {
+      openHelp.blur();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    const openHelp = document.activeElement;
+    if (openHelp instanceof HTMLElement && openHelp.classList.contains('field-help')) {
+      openHelp.blur();
+    }
+  });
+}
+
 function pauseTransportForBackground() {
   const didPause = audioEngine.pauseForBackground();
   if (didPause) {
@@ -915,6 +938,7 @@ async function init() {
   syncTempo(state.tempo);
   syncTransportMode();
   installAudioPrimer();
+  installTooltipDismissal();
   attachLifecycleListeners();
   attachEventListeners();
   chordLibrary = await loadChordLibrary();
