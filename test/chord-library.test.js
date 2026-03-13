@@ -139,10 +139,13 @@ test('triads and seventh chord shapes surface as real alternate candidates when 
     library,
     new Set(['open', 'triad'])
   );
-  assert.deepEqual(
-    majorCandidates.map((shape) => shape.label),
-    ['Open C', 'D-shape triad']
-  );
+  const majorLabels = new Set(majorCandidates.map((shape) => shape.label));
+  assert.ok(majorLabels.has('Open C'));
+  assert.ok(majorLabels.has('D-shape triad'));
+  assert.ok(majorLabels.has('3-2-1 root position triad'));
+  assert.ok(majorLabels.has('4-3-2 root position triad'));
+  assert.ok(majorLabels.has('5-4-3 root position triad'));
+  assert.ok(majorLabels.has('6-5-4 root position triad'));
 
   const majorSevenCandidates = getCandidateShapesForChord(
     { id: 'C:maj7', pitchClass: 0, quality: 'maj7', label: 'Cmaj7' },

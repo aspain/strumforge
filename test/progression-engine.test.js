@@ -223,7 +223,7 @@ test('canonical and best-fit shape selection preserve chord identity', async () 
   });
 });
 
-test('triad category exposes movable fourth-string triads for plain major chords', async () => {
+test('triad category exposes movable triads across multiple string sets for plain major chords', async () => {
   const library = await loadLibrary();
   const chord = {
     id: 'C:maj',
@@ -235,6 +235,10 @@ test('triad category exposes movable fourth-string triads for plain major chords
   const candidates = getCandidateShapesForChord(chord, library, new Set(['triad']));
 
   assert.ok(candidates.some((shape) => shape.label === 'D-shape triad'));
+  assert.ok(candidates.some((shape) => shape.label === '3-2-1 root position triad'));
+  assert.ok(candidates.some((shape) => shape.label === '4-3-2 root position triad'));
+  assert.ok(candidates.some((shape) => shape.label === '5-4-3 root position triad'));
+  assert.ok(candidates.some((shape) => shape.label === '6-5-4 root position triad'));
 });
 
 test('triad-only filters can still generate a playable progression', async () => {

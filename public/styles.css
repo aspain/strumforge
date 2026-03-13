@@ -782,17 +782,21 @@ input[type='radio'] {
 }
 
 .card-chip-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
   min-width: 0;
+  width: 100%;
 }
 
 .card-chip-row .theory-chip,
 .card-chip-row .voicing-chip {
-  flex: 0 1 auto;
   min-width: 0;
 }
 
 .card-chip-row .voicing-chip {
-  margin-left: auto;
+  justify-self: end;
+  max-width: 100%;
 }
 
 .card-header > h3 {

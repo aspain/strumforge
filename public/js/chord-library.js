@@ -1,7 +1,25 @@
 import { buildChordId, formatChordLabel, normalizePitchClass } from './music-theory.js';
 
 const OPEN_STRING_PITCHES = [4, 9, 2, 7, 11, 4];
+const OPEN_STRING_MIDIS = [40, 45, 50, 55, 59, 64];
 const SHAPE_TYPE_CATEGORIES = new Set(['open', 'barre', 'triad', 'power']);
+const TRIAD_STRING_GROUPS = [
+  { id: '321', stringIndexes: [3, 4, 5], label: '3-2-1', canonicalRank: 29, difficulty: 1, positionBias: 0.05 },
+  { id: '432', stringIndexes: [2, 3, 4], label: '4-3-2', canonicalRank: 30, difficulty: 2, positionBias: 0.1 },
+  { id: '543', stringIndexes: [1, 2, 3], label: '5-4-3', canonicalRank: 31, difficulty: 2, positionBias: 0.15 },
+  { id: '654', stringIndexes: [0, 1, 2], label: '6-5-4', canonicalRank: 32, difficulty: 3, positionBias: 0.2 }
+];
+const TRIAD_QUALITY_INTERVALS = {
+  maj: [0, 4, 7],
+  min: [0, 3, 7],
+  sus2: [0, 2, 7],
+  sus4: [0, 5, 7]
+};
+const TRIAD_INVERSION_INTERVALS = [
+  { id: 'root-position', label: 'root position', buildIntervals: (colorTone) => [0, colorTone, 7] },
+  { id: '1st-inversion', label: '1st inversion', buildIntervals: (colorTone) => [colorTone, 7, 12] },
+  { id: '2nd-inversion', label: '2nd inversion', buildIntervals: (colorTone) => [7, 12, 12 + colorTone] }
+];
 
 function matchesEnabledShapeTypes(shapeCategories, enabledShapeTypes) {
   const requiredShapeTypes = shapeCategories.filter((category) => SHAPE_TYPE_CATEGORIES.has(category));
@@ -60,6 +78,100 @@ function buildMovableShape({
 
 function rootFretForString(rootPitchClass, stringIndex) {
   return (normalizePitchClass(rootPitchClass) - OPEN_STRING_PITCHES[stringIndex] + 12) % 12;
+}
+
+function buildTriadFingers(frets) {
+  const orderedFrets = [...new Set(frets.filter((fret) => fret > 0))].sort((left, right) => left - right);
+  const fingerByFret = new Map(orderedFrets.map((fret, index) => [fret, Math.min(index + 1, 4)]));
+  return frets.map((fret) => (fret > 0 ? fingerByFret.get(fret) : 0));
+}
+
+function buildTriadBarres(frets) {
+  const playedStrings = frets
+    .map((fret, stringIndex) => ({ fret, stringNumber: 6 - stringIndex }))
+    .filter(({ fret }) => fret > 0);
+  const barres = [];
+
+  for (let index = 0; index < playedStrings.length - 1; index += 1) {
+    const current = playedStrings[index];
+    const next = playedStrings[index + 1];
+    if (current.fret !== next.fret) continue;
+    if (current.stringNumber - next.stringNumber !== 1) continue;
+
+    barres.push({
+      fret: current.fret,
+      fromString: current.stringNumber,
+      toString: next.stringNumber,
+      finger: 1
+    });
+  }
+
+  return barres;
+}
+
+// Search absolute pitches instead of memorizing fret patterns so every added triad is derived
+// from the chord's actual intervals against standard tuning.
+function findClosedTriadVoicing(rootPitchClass, orderedIntervals, stringIndexes) {
+  const normalizedRoot = normalizePitchClass(rootPitchClass);
+  let best = null;
+
+  for (let rootMidi = 24 + normalizedRoot; rootMidi <= 72; rootMidi += 12) {
+    const frets = stringIndexes.map(
+      (stringIndex, intervalIndex) => rootMidi + orderedIntervals[intervalIndex] - OPEN_STRING_MIDIS[stringIndex]
+    );
+    if (frets.some((fret) => fret <= 0 || fret > 15)) continue;
+
+    const minFret = Math.min(...frets);
+    const maxFret = Math.max(...frets);
+    if (maxFret - minFret > 4) continue;
+
+    const averageFretValue = frets.reduce((sum, fret) => sum + fret, 0) / frets.length;
+    if (!best || averageFretValue < best.averageFretValue) {
+      best = { frets, averageFretValue };
+    }
+  }
+
+  return best;
+}
+
+function makeAdjacentStringTriads(rootPitchClass, quality) {
+  const intervals = TRIAD_QUALITY_INTERVALS[quality];
+  if (!intervals) return [];
+
+  const colorTone = intervals[1];
+  const categories = quality === 'sus2' || quality === 'sus4' ? ['triad', 'sus/add'] : ['triad'];
+  const shapes = [];
+
+  for (const stringGroup of TRIAD_STRING_GROUPS) {
+    for (const inversion of TRIAD_INVERSION_INTERVALS) {
+      const voicing = findClosedTriadVoicing(rootPitchClass, inversion.buildIntervals(colorTone), stringGroup.stringIndexes);
+      if (!voicing) continue;
+
+      const frets = [-1, -1, -1, -1, -1, -1];
+      for (let index = 0; index < stringGroup.stringIndexes.length; index += 1) {
+        frets[stringGroup.stringIndexes[index]] = voicing.frets[index];
+      }
+
+      const fingers = buildTriadFingers(frets);
+      const inversionRank = inversion.id === 'root-position' ? 0 : inversion.id === '1st-inversion' ? 0.1 : 0.2;
+
+      shapes.push(buildMovableShape({
+        id: `${buildChordId(rootPitchClass, quality)}-${stringGroup.id}-${inversion.id}`,
+        pitchClass: rootPitchClass,
+        quality,
+        label: `${stringGroup.label} ${inversion.label} triad`,
+        frets,
+        fingers,
+        barres: buildTriadBarres(frets),
+        categories,
+        difficulty: stringGroup.difficulty,
+        canonicalRank: stringGroup.canonicalRank + inversionRank,
+        positionScore: voicing.averageFretValue + stringGroup.positionBias
+      }));
+    }
+  }
+
+  return shapes;
 }
 
 function makeSixthStringBarre(rootPitchClass, quality) {
@@ -372,12 +484,14 @@ export function getCandidateShapesForChord(chord, library, enabledShapeTypes) {
     candidates.push(cloneShape(shape, chord.id, chord.label));
   }
 
-  const movableFactories = [makeFifthStringBarre, makeSixthStringBarre, makeFourthStringShape];
+  const movableFactories = [makeFifthStringBarre, makeSixthStringBarre, makeFourthStringShape, makeAdjacentStringTriads];
   for (const buildShape of movableFactories) {
-    const shape = buildShape(chord.pitchClass, chord.quality);
-    if (!shape) continue;
-    if (!matchesEnabledShapeTypes(shape.categories, enabled)) continue;
-    candidates.push(cloneShape(shape, chord.id, chord.label));
+    const builtShapes = buildShape(chord.pitchClass, chord.quality);
+    const shapes = Array.isArray(builtShapes) ? builtShapes : builtShapes ? [builtShapes] : [];
+    for (const shape of shapes) {
+      if (!matchesEnabledShapeTypes(shape.categories, enabled)) continue;
+      candidates.push(cloneShape(shape, chord.id, chord.label));
+    }
   }
 
   return candidates.sort(compareShapes);
