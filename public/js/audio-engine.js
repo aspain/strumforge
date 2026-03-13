@@ -242,7 +242,7 @@ export class AudioEngine {
     this.noiseBuffer = null;
     this.audioSessionConfigured = false;
     this.tempo = 92;
-    this.groove = GROOVES[1];
+    this.groove = GROOVES[0];
     this.playDrums = true;
     this.playChords = false;
     this.chordSequence = [];

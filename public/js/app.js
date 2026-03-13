@@ -18,11 +18,12 @@ const state = {
   leftHanded: false,
   tempo: 92,
   meter: '4/4',
-  groove: 'groove-44-2',
+  groove: 'groove-44-1',
   playDrums: true,
   playChords: false,
   activeChordIndex: -1,
   progression: null,
+  warningMessage: '',
   shapeOverrides: {},
   pendingHandleFocusIndex: null
 };
@@ -33,7 +34,6 @@ const elements = {
   keyRootSelect: document.getElementById('key-root-select'),
   leftHandedToggle: document.getElementById('left-handed-toggle'),
   generateButton: document.getElementById('generate-button'),
-  warning: document.getElementById('generator-warning'),
   progressionKeyDisplay: document.getElementById('progression-key-display'),
   progressionGrid: document.getElementById('progression-grid'),
   playDrumsToggle: document.getElementById('play-drums-toggle'),
@@ -112,13 +112,18 @@ function renderGrooveOptions() {
     state.groove = grooves[0].id;
   }
   elements.grooveSelect.innerHTML = grooves
-    .map((groove) => `<option value="${groove.id}">${groove.label}</option>`)
+    .map((groove) => `<option value="${groove.id}"${groove.id === state.groove ? ' selected' : ''}>${groove.label}</option>`)
     .join('');
   elements.grooveSelect.value = state.groove;
   const groove = GROOVES.find((item) => item.id === state.groove);
   elements.grooveLabel.textContent = groove.label;
   audioEngine.setGroove(state.groove);
   renderBeatPulse(-1);
+}
+
+function syncRhythmControlsFromState() {
+  elements.meterSelect.value = state.meter;
+  renderGrooveOptions();
 }
 
 function renderBeatPulse(activeBeat) {
@@ -144,7 +149,7 @@ function updateStatusLine() {
 }
 
 function updateWarning(message) {
-  elements.warning.textContent = message || '';
+  state.warningMessage = message || '';
 }
 
 function updateTransportButton(isPlaying) {
@@ -531,7 +536,7 @@ function renderEmptyProgression({
 function renderProgression() {
   if (!state.progression || !state.progression.chords?.length) {
     renderEmptyProgression({
-      title: elements.warning.textContent || NO_PLAYABLE_LOOP_WARNING
+      title: state.warningMessage || NO_PLAYABLE_LOOP_WARNING
     });
     updateStatusLine();
     return;
@@ -642,12 +647,13 @@ function readEnabledFlavorOptions() {
 
 function applyShapeFilters() {
   state.shapeOverrides = {};
-  renderKeyOptions();
-  if (!state.progression) {
+  if (!state.progression || !chordLibrary) {
+    renderKeyOptions();
     regenerateProgression();
     return;
   }
-  renderProgression();
+
+  refreshProgression('preserve');
 }
 
 function refreshProgression(rebuildStrategy = 'preserve') {
@@ -696,10 +702,6 @@ function attachEventListeners() {
   document.querySelectorAll('input[name="shape-type"]').forEach((node) => {
     node.addEventListener('change', () => {
       readEnabledShapeTypes();
-      if (node.value === 'power' && state.progression?.chords?.some((chord) => chord.quality === '5')) {
-        refreshProgression('preserve');
-        return;
-      }
       applyShapeFilters();
     });
   });
@@ -818,15 +820,23 @@ function attachEventListeners() {
 
 async function init() {
   ensureReorderStatusRegion();
+  syncRhythmControlsFromState();
   renderKeyOptions();
-  renderGrooveOptions();
   syncTempo(state.tempo);
   syncTransportMode();
   attachEventListeners();
   chordLibrary = await loadChordLibrary();
   renderKeyOptions();
   regenerateProgression();
+
+  // Some browsers restore prior form control values after module init.
+  window.requestAnimationFrame(() => syncRhythmControlsFromState());
+  window.setTimeout(() => syncRhythmControlsFromState(), 0);
 }
+
+window.addEventListener('pageshow', () => {
+  syncRhythmControlsFromState();
+});
 
 init().catch((error) => {
   updateWarning('Failed to load chord data.');
