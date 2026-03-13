@@ -2799,7 +2799,6 @@ input[type='range'] {
 
 @media (hover: none) and (pointer: coarse) and (max-width: 600px),
   (hover: none) and (pointer: coarse) and (max-height: 500px) {
-  select,
   input[type='number'] {
     font-size: 16px !important;
   }
