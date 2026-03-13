@@ -25,7 +25,8 @@ const state = {
   progression: null,
   warningMessage: '',
   shapeOverrides: {},
-  pendingHandleFocusIndex: null
+  pendingHandleFocusIndex: null,
+  audioPrimed: false
 };
 
 const elements = {
@@ -54,6 +55,80 @@ const audioEngine = new AudioEngine(({ beatIndex, chordIndex }) => {
   renderBeatPulse(beatIndex);
   setActiveChord(chordIndex);
 });
+
+function isNativeShell() {
+  return window.location.protocol === 'capacitor:' || document.URL.startsWith('capacitor://');
+}
+
+function applyPlatformClassNames() {
+  const nativeShell = isNativeShell();
+  document.documentElement.classList.toggle('is-native-app', nativeShell);
+  document.body.classList.toggle('is-native-app', nativeShell);
+}
+
+async function primeAudio() {
+  if (state.audioPrimed) return;
+  try {
+    await audioEngine.prime();
+    state.audioPrimed = true;
+  } catch (error) {
+    console.warn('Audio priming failed.', error);
+  }
+}
+
+function installAudioPrimer() {
+  const handleFirstGesture = () => {
+    document.removeEventListener('keydown', handleFirstGesture);
+    void primeAudio();
+  };
+
+  document.addEventListener('pointerdown', handleFirstGesture, {
+    once: true,
+    passive: true
+  });
+  document.addEventListener('keydown', handleFirstGesture, { once: true });
+}
+
+function pauseTransportForBackground() {
+  const didPause = audioEngine.pauseForBackground();
+  if (didPause) {
+    updateTransportButton(false);
+  }
+}
+
+async function restoreTransportAfterBackground() {
+  if (document.hidden) return;
+  const resumed = await audioEngine.restoreAfterBackground();
+  if (resumed) {
+    updateTransportButton(true);
+  }
+}
+
+function attachLifecycleListeners() {
+  const appPlugin = window.Capacitor?.Plugins?.App;
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      pauseTransportForBackground();
+      return;
+    }
+
+    void restoreTransportAfterBackground();
+  });
+
+  window.addEventListener('pagehide', pauseTransportForBackground);
+
+  if (typeof appPlugin?.addListener === 'function') {
+    appPlugin.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        void restoreTransportAfterBackground();
+        return;
+      }
+
+      pauseTransportForBackground();
+    });
+  }
+}
 
 function syncTransportMode() {
   audioEngine.setTransportMode({ drums: state.playDrums, chords: state.playChords });
@@ -819,11 +894,14 @@ function attachEventListeners() {
 }
 
 async function init() {
+  applyPlatformClassNames();
   ensureReorderStatusRegion();
   syncRhythmControlsFromState();
   renderKeyOptions();
   syncTempo(state.tempo);
   syncTransportMode();
+  installAudioPrimer();
+  attachLifecycleListeners();
   attachEventListeners();
   chordLibrary = await loadChordLibrary();
   renderKeyOptions();
@@ -836,6 +914,7 @@ async function init() {
 
 window.addEventListener('pageshow', () => {
   syncRhythmControlsFromState();
+  void restoreTransportAfterBackground();
 });
 
 init().catch((error) => {

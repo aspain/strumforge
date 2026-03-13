@@ -1,2 +1,6 @@
 node_modules/
 .DS_Store
+dist/
+ios/App/App/public/
+ios/App/Pods/
+LOCAL_IOS_SETUP.md

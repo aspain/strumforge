@@ -4,6 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "native:prepare": "node scripts/prepare-native.mjs",
+    "native:copy": "npm run native:prepare && npx cap copy",
+    "native:sync": "npm run native:prepare && npx cap sync",
+    "native:open:ios": "npm run native:sync && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/ios": "^6.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }

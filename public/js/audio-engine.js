@@ -251,6 +251,7 @@ export class AudioEngine {
     this.currentStep = 0;
     this.currentBar = 0;
     this.nextStepTime = 0;
+    this.resumeAfterInterruption = false;
   }
 
   setTempo(tempo) {
@@ -295,6 +296,10 @@ export class AudioEngine {
       this.noiseBuffer = this.createNoiseBuffer();
     }
     if (this.audioContext.state === 'suspended') await this.audioContext.resume();
+  }
+
+  async prime() {
+    await this.ensureContext();
   }
 
   createNoiseBuffer() {
@@ -451,6 +456,7 @@ export class AudioEngine {
     await this.ensureContext();
     if (this.isPlaying) return;
     this.isPlaying = true;
+    this.resumeAfterInterruption = false;
     this.currentStep = 0;
     this.currentBar = 0;
     this.nextStepTime = this.audioContext.currentTime + 0.05;
@@ -458,13 +464,31 @@ export class AudioEngine {
     this.schedulerId = window.setInterval(this.scheduler, 25);
   }
 
-  stop() {
+  stop({ preserveResumeIntent = false } = {}) {
     this.isPlaying = false;
+    if (!preserveResumeIntent) {
+      this.resumeAfterInterruption = false;
+    }
     if (this.schedulerId) {
       window.clearInterval(this.schedulerId);
       this.schedulerId = null;
     }
     this.onPulse({ beatIndex: -1, chordIndex: -1 });
+  }
+
+  pauseForBackground() {
+    if (!this.isPlaying) return false;
+    this.resumeAfterInterruption = true;
+    this.stop({ preserveResumeIntent: true });
+    return true;
+  }
+
+  async restoreAfterBackground() {
+    if (!this.resumeAfterInterruption) return false;
+    this.resumeAfterInterruption = false;
+    if (!this.playDrums && !this.playChords) return false;
+    await this.start();
+    return true;
   }
 
   async toggle() {
