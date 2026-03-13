@@ -35,6 +35,23 @@ test('generateProgression returns four playable chords when only open chords are
   }
 });
 
+test('generateProgression treats a null keyRoot as random when keyLocked is omitted', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyRoot: null,
+      modePreference: 'major',
+      enabledShapeTypes: new Set(['open']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.chords.length, 4);
+});
+
 test('generateProgression warns when a locked key does not fit the selected chord shapes', async () => {
   const library = await loadLibrary();
   const state = {
@@ -71,6 +88,24 @@ test('generateProgression can build a C major open-chord loop when the key is lo
     const candidates = getCandidateShapesForChord(chord, library, new Set(['open']));
     assert.ok(candidates.length > 0, `Expected at least one open-chord shape for ${chord.label}`);
   }
+});
+
+test('generateProgression treats a numeric keyRoot as fixed when keyLocked is omitted', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyRoot: 0,
+      modePreference: 'major',
+      enabledShapeTypes: new Set(['open']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0.999
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.keyRoot, 0);
+  assert.equal(progression.mode, 'major');
 });
 
 test('generateProgression spells diatonic chords according to the locked key signature', async () => {

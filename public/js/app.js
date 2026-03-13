@@ -11,8 +11,7 @@ import {
 } from './progression-engine.js';
 
 const state = {
-  keyLocked: false,
-  keyRoot: 0,
+  keyRoot: null,
   modePreference: 'auto',
   enabledShapeTypes: new Set(['open']),
   enabledFlavorOptions: new Set(),
@@ -31,7 +30,6 @@ const state = {
 const elements = {
   currentKeyLabel: document.getElementById('current-key-label'),
   beatCounterLabel: document.getElementById('beat-counter-label'),
-  keyLockToggle: document.getElementById('key-lock-toggle'),
   keyRootSelect: document.getElementById('key-root-select'),
   leftHandedToggle: document.getElementById('left-handed-toggle'),
   generateButton: document.getElementById('generate-button'),
@@ -93,19 +91,15 @@ function formatKeyRootOption(pitchClass) {
 
 function renderKeyOptions() {
   const feasibleRoots = chordLibrary ? getFeasibleKeyRoots(state, chordLibrary) : listPitchClasses();
-  if (feasibleRoots.length) {
-    if (!feasibleRoots.includes(state.keyRoot)) {
-      state.keyRoot = feasibleRoots[0];
-    }
-  } else {
-    state.keyRoot = 0;
+  if (state.keyRoot !== null && !feasibleRoots.includes(state.keyRoot)) {
+    state.keyRoot = null;
   }
 
-  elements.keyRootSelect.innerHTML = feasibleRoots
-    .map((index) => `<option value="${index}">${formatKeyRootOption(index)}</option>`)
-    .join('');
-  elements.keyRootSelect.value = String(state.keyRoot);
-  elements.keyRootSelect.disabled = !state.keyLocked || feasibleRoots.length === 0;
+  elements.keyRootSelect.innerHTML = [
+    '<option value="random">Random</option>',
+    ...feasibleRoots.map((index) => `<option value="${index}">${formatKeyRootOption(index)}</option>`)
+  ].join('');
+  elements.keyRootSelect.value = state.keyRoot === null ? 'random' : String(state.keyRoot);
 }
 
 function currentGrooves() {
@@ -685,14 +679,10 @@ function refreshProgression(rebuildStrategy = 'preserve') {
 function attachEventListeners() {
   syncTransportMode();
   elements.generateButton.addEventListener('click', regenerateProgression);
-  elements.keyLockToggle.addEventListener('change', () => {
-    state.keyLocked = elements.keyLockToggle.checked;
-    renderKeyOptions();
-    refreshProgression('preserve');
-  });
-
   elements.keyRootSelect.addEventListener('change', () => {
-    state.keyRoot = Number(elements.keyRootSelect.value);
+    state.keyRoot = elements.keyRootSelect.value === 'random'
+      ? null
+      : Number(elements.keyRootSelect.value);
     refreshProgression('preserve');
   });
 

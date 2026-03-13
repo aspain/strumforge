@@ -219,7 +219,15 @@ function buildPlan(rootPitchClass, mode, template, enabledShapeTypes, enabledFla
 }
 
 function buildWarning(state) {
-  return state.keyLocked ? LOCKED_KEY_CHORD_SHAPES_WARNING : NO_PLAYABLE_LOOP_WARNING;
+  return hasFixedKey(state) ? LOCKED_KEY_CHORD_SHAPES_WARNING : NO_PLAYABLE_LOOP_WARNING;
+}
+
+function hasFixedKey(state) {
+  if (typeof state?.keyLocked === 'boolean') {
+    return state.keyLocked;
+  }
+
+  return Number.isInteger(state?.keyRoot);
 }
 
 function collectFeasiblePlans(state, library) {
@@ -230,7 +238,7 @@ function collectFeasiblePlans(state, library) {
     ? state.enabledFlavorOptions
     : new Set(state.enabledFlavorOptions);
   const modes = state.modePreference === 'auto' ? ['major', 'minor'] : [state.modePreference];
-  const roots = state.keyLocked ? [state.keyRoot] : listPitchClasses();
+  const roots = hasFixedKey(state) ? [state.keyRoot] : listPitchClasses();
 
   const feasiblePlans = [];
   for (const mode of modes) {
@@ -249,7 +257,8 @@ export function getFeasibleKeyRoots(state, library) {
   const feasiblePlans = collectFeasiblePlans(
     {
       ...state,
-      keyLocked: false
+      keyLocked: false,
+      keyRoot: null
     },
     library
   );
@@ -295,7 +304,7 @@ export function rebuildProgression(existingProgression, state, library) {
     ? state.enabledFlavorOptions
     : new Set(state.enabledFlavorOptions);
   const targetMode = state.modePreference === 'auto' ? existingProgression.mode : state.modePreference;
-  const targetRoot = state.keyLocked ? state.keyRoot : existingProgression.keyRoot;
+  const targetRoot = hasFixedKey(state) ? state.keyRoot : existingProgression.keyRoot;
   const strategy = state.rebuildStrategy === 'reharmonize' ? 'reharmonize' : 'preserve';
 
   const chords = [];

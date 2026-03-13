@@ -1,7 +1,7 @@
 export const GROOVES = [
   {
     id: 'straight-rock',
-    label: 'Straight Rock',
+    label: 'Groove 1',
     meter: '4/4',
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
@@ -19,7 +19,7 @@ export const GROOVES = [
   },
   {
     id: 'folk-pop',
-    label: 'Folk Pop',
+    label: 'Groove 2',
     meter: '4/4',
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
@@ -38,7 +38,7 @@ export const GROOVES = [
   },
   {
     id: 'indie-bounce',
-    label: 'Indie Bounce',
+    label: 'Groove 3',
     meter: '4/4',
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
@@ -59,7 +59,7 @@ export const GROOVES = [
   },
   {
     id: 'anthem-drive',
-    label: 'Anthem Drive',
+    label: 'Groove 4',
     meter: '4/4',
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
@@ -79,7 +79,7 @@ export const GROOVES = [
   },
   {
     id: 'laid-back-soul',
-    label: 'Laid Back Soul',
+    label: 'Groove 5',
     meter: '4/4',
     beatsPerBar: 4,
     subdivisionsPerBeat: 4,
@@ -100,7 +100,7 @@ export const GROOVES = [
   },
   {
     id: 'waltz',
-    label: 'Waltz',
+    label: 'Groove 1',
     meter: '3/4',
     beatsPerBar: 3,
     subdivisionsPerBeat: 4,
@@ -117,7 +117,7 @@ export const GROOVES = [
   },
   {
     id: 'country-waltz',
-    label: 'Country Waltz',
+    label: 'Groove 2',
     meter: '3/4',
     beatsPerBar: 3,
     subdivisionsPerBeat: 4,
@@ -137,7 +137,7 @@ export const GROOVES = [
   },
   {
     id: 'brush-waltz',
-    label: 'Brush Waltz',
+    label: 'Groove 3',
     meter: '3/4',
     beatsPerBar: 3,
     subdivisionsPerBeat: 4,
@@ -158,7 +158,7 @@ export const GROOVES = [
   },
   {
     id: 'compound-six',
-    label: 'Compound 6/8',
+    label: 'Groove 1',
     meter: '6/8',
     beatsPerBar: 6,
     subdivisionsPerBeat: 2,
@@ -176,7 +176,7 @@ export const GROOVES = [
   },
   {
     id: 'lilting-six-eight',
-    label: 'Lilting 6/8',
+    label: 'Groove 2',
     meter: '6/8',
     beatsPerBar: 6,
     subdivisionsPerBeat: 2,
@@ -197,7 +197,7 @@ export const GROOVES = [
   },
   {
     id: 'ballad-six-eight',
-    label: 'Ballad 6/8',
+    label: 'Groove 3',
     meter: '6/8',
     beatsPerBar: 6,
     subdivisionsPerBeat: 2,

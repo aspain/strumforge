@@ -81,7 +81,7 @@
           </div>
           <div class="status-pill">
             <span class="status-label">Groove</span>
-            <strong id="groove-label">Folk Pop</strong>
+            <strong id="groove-label">Groove 2</strong>
           </div>
         </div>
 
@@ -91,31 +91,28 @@
               <p class="panel-kicker">Key</p>
             </div>
 
-            <div class="toggle-pair">
-              <label class="toggle-row">
-                <span>Lock key</span>
-                <input id="key-lock-toggle" type="checkbox" />
+            <div class="key-row">
+              <label class="field key-root-field">
+                <span class="field-label">Key</span>
+                <select id="key-root-select"></select>
               </label>
-              <label class="toggle-row">
-                <span>Left-handed</span>
-                <input id="left-handed-toggle" type="checkbox" />
+              <label class="field key-diagram-field">
+                <span class="field-label">Diagram</span>
+                <span class="toggle-row key-utility-toggle">
+                  <span>Left-handed</span>
+                  <input id="left-handed-toggle" type="checkbox" />
+                </span>
               </label>
             </div>
 
-            <div class="key-row">
-              <label class="field field-compact key-root-field">
-                <span class="field-label">Key root</span>
-                <select id="key-root-select"></select>
-              </label>
-              <fieldset class="segmented-field mode-inline-field">
-                <legend>Mode</legend>
-                <div class="segmented mode-segmented inline-mode-segmented">
-                  <label><input type="radio" name="mode-preference" value="auto" checked /> <span>Auto</span></label>
-                  <label><input type="radio" name="mode-preference" value="major" /> <span>Major</span></label>
-                  <label><input type="radio" name="mode-preference" value="minor" /> <span>Minor</span></label>
-                </div>
-              </fieldset>
-            </div>
+            <fieldset class="segmented-field mode-inline-field">
+              <legend>Mode</legend>
+              <div class="segmented mode-segmented inline-mode-segmented">
+                <label><input type="radio" name="mode-preference" value="auto" checked /> <span>Auto</span></label>
+                <label><input type="radio" name="mode-preference" value="major" /> <span>Major</span></label>
+                <label><input type="radio" name="mode-preference" value="minor" /> <span>Minor</span></label>
+              </div>
+            </fieldset>
 
             <button id="generate-button" class="generate-button key-generate-button" type="button">Generate</button>
           </section>
