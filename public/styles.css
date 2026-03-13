@@ -2287,3 +2287,12 @@ input[type='range'] {
     font-size: 7px;
   }
 }
+
+@media (max-width: 390px) {
+  #controls-heading {
+    font-size: 10.5px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+}
