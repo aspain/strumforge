@@ -1114,6 +1114,8 @@ input[type='radio'] {
 .is-reordering,
 .is-reordering * {
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .swap-shape:disabled,
@@ -2792,5 +2794,17 @@ input[type='range'] {
     line-height: inherit;
     letter-spacing: inherit;
     white-space: inherit;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) and (max-width: 600px),
+  (hover: none) and (pointer: coarse) and (max-height: 500px) {
+  select,
+  input[type='number'] {
+    font-size: 16px !important;
+  }
+
+  .tempo-box input {
+    width: 62px;
   }
 }

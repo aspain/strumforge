@@ -114,6 +114,17 @@ function installTooltipDismissal() {
   });
 }
 
+function installSelectionSuppression() {
+  const blockSelection = (event) => {
+    if (document.body.classList.contains('is-reordering')) {
+      event.preventDefault();
+    }
+  };
+
+  document.addEventListener('selectstart', blockSelection);
+  document.addEventListener('dragstart', blockSelection);
+}
+
 function pauseTransportForBackground() {
   const didPause = audioEngine.pauseForBackground();
   if (didPause) {
@@ -953,6 +964,7 @@ async function init() {
   syncTransportMode();
   installAudioPrimer();
   installTooltipDismissal();
+  installSelectionSuppression();
   attachLifecycleListeners();
   attachEventListeners();
   chordLibrary = await loadChordLibrary();

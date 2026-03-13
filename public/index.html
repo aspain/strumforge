@@ -30,6 +30,14 @@
   <meta name="twitter:image" content="https://adamspain.com/chord-muse/chord-muse-preview.png" />
   <script>
     const chordMuseIsNativeApp = window.location.protocol === 'capacitor:' || document.URL.startsWith('capacitor://');
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (chordMuseIsNativeApp && viewportMeta) {
+      viewportMeta.setAttribute(
+        'content',
+        'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover'
+      );
+    }
+
     if (!chordMuseIsNativeApp) {
       const preconnectGoogle = document.createElement('link');
       preconnectGoogle.rel = 'preconnect';
