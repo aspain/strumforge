@@ -178,6 +178,78 @@ function finalizeChord(chord) {
   };
 }
 
+function decorateProgressionChord(chord) {
+  return {
+    ...chord,
+    theoryChip: `${chord.numeral} • ${chord.functionLabel}`
+  };
+}
+
+function buildProgressionSignature(progression) {
+  if (!progression?.chords?.length) return '';
+  return [
+    progression.keyRoot,
+    progression.mode,
+    ...progression.chords.map((chord) => chord.id)
+  ].join('|');
+}
+
+function buildProgressionFromChoices(rootPitchClass, mode, choices) {
+  return {
+    keyRoot: rootPitchClass,
+    mode,
+    chords: choices.map(decorateProgressionChord),
+    warning: ''
+  };
+}
+
+function buildProgressionFromPlan(plan, rng) {
+  const winners = plan.resolvedChoices.map((choices) => weightedPick(choices, rng));
+  return buildProgressionFromChoices(plan.rootPitchClass, plan.mode, winners);
+}
+
+function collectDistinctProgressionVariants(feasiblePlans) {
+  const variantsBySignature = new Map();
+
+  feasiblePlans.forEach((plan) => {
+    const slotTotals = plan.resolvedChoices.map((choices) => (
+      choices.reduce((sum, choice) => sum + choice.weight, 0)
+    ));
+
+    function visitChoices(choiceIndex, selectedChoices, relativeWeight) {
+      if (choiceIndex >= plan.resolvedChoices.length) {
+        const progression = buildProgressionFromChoices(plan.rootPitchClass, plan.mode, selectedChoices);
+        const signature = buildProgressionSignature(progression);
+        const nextWeight = plan.weight * relativeWeight;
+        const existing = variantsBySignature.get(signature);
+
+        if (existing) {
+          existing.weight += nextWeight;
+          return;
+        }
+
+        variantsBySignature.set(signature, {
+          ...progression,
+          weight: nextWeight
+        });
+        return;
+      }
+
+      const choices = plan.resolvedChoices[choiceIndex];
+      const totalWeight = slotTotals[choiceIndex] || 1;
+      choices.forEach((choice) => {
+        selectedChoices.push(choice);
+        visitChoices(choiceIndex + 1, selectedChoices, relativeWeight * (choice.weight / totalWeight));
+        selectedChoices.pop();
+      });
+    }
+
+    visitChoices(0, [], 1);
+  });
+
+  return Array.from(variantsBySignature.values());
+}
+
 function buildBaseChords(rootPitchClass, mode, template) {
   return template.degrees.map((degree) => {
     const chord = buildChordDefinition(rootPitchClass, mode, degree);
@@ -274,18 +346,35 @@ export function generateProgression(state, library, rng = Math.random) {
   }
 
   const selectedPlan = weightedPick(feasiblePlans, rng);
-  const chords = selectedPlan.resolvedChoices.map((choices) => {
-    const winner = weightedPick(choices, rng);
-    return {
-      ...winner,
-      theoryChip: `${winner.numeral} • ${winner.functionLabel}`
-    };
-  });
+  return buildProgressionFromPlan(selectedPlan, rng);
+}
 
+export function generateDistinctProgression(state, library, previousProgression, rng = Math.random) {
+  const feasiblePlans = collectFeasiblePlans(state, library);
+
+  if (!feasiblePlans.length) {
+    return {
+      warning: buildWarning(state)
+    };
+  }
+
+  if (!previousProgression?.chords?.length) {
+    return buildProgressionFromPlan(weightedPick(feasiblePlans, rng), rng);
+  }
+
+  const excludedSignature = buildProgressionSignature(previousProgression);
+  const alternatives = collectDistinctProgressionVariants(feasiblePlans)
+    .filter((progression) => buildProgressionSignature(progression) !== excludedSignature);
+
+  if (!alternatives.length) {
+    return buildProgressionFromPlan(weightedPick(feasiblePlans, rng), rng);
+  }
+
+  const selectedAlternative = weightedPick(alternatives, rng);
   return {
-    keyRoot: selectedPlan.rootPitchClass,
-    mode: selectedPlan.mode,
-    chords,
+    keyRoot: selectedAlternative.keyRoot,
+    mode: selectedAlternative.mode,
+    chords: selectedAlternative.chords,
     warning: ''
   };
 }
@@ -333,10 +422,7 @@ export function rebuildProgression(existingProgression, state, library) {
       previousChord.quality,
       strategy
     );
-    chords.push({
-      ...winner,
-      theoryChip: `${winner.numeral} • ${winner.functionLabel}`
-    });
+    chords.push(decorateProgressionChord(winner));
   }
 
   return {

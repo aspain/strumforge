@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import { hydrateChordLibrary, getCandidateShapesForChord, selectShapeSequence } from '../public/js/chord-library.js';
 import {
+  generateDistinctProgression,
   generateProgression,
   getFeasibleKeyRoots,
   rebuildProgression,
@@ -157,6 +158,33 @@ test('generateProgression offers multiple open-chord major loops when the key is
   );
 
   assert.ok(degreeSequences.size > 1, 'Expected more than one open-chord loop for locked C major');
+});
+
+test('generateDistinctProgression avoids returning the current exact loop when alternatives exist', async () => {
+  const library = await loadLibrary();
+  const state = {
+    keyLocked: true,
+    keyRoot: 0,
+    modePreference: 'major',
+    enabledShapeTypes: new Set(['open']),
+    enabledFlavorOptions: new Set()
+  };
+  const current = generateProgression(state, library, () => 0);
+  const next = generateDistinctProgression(state, library, current, () => 0);
+
+  assert.equal(next.warning, '');
+  assert.notDeepEqual(
+    {
+      keyRoot: next.keyRoot,
+      mode: next.mode,
+      chordIds: next.chords.map((chord) => chord.id)
+    },
+    {
+      keyRoot: current.keyRoot,
+      mode: current.mode,
+      chordIds: current.chords.map((chord) => chord.id)
+    }
+  );
 });
 
 test('getFeasibleKeyRoots reflects open-chord-friendly keys for the current settings', async () => {

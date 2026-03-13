@@ -5,6 +5,7 @@ import { getKeyTonicName, listPitchClasses } from './music-theory.js';
 import { moveIndex, moveIndexedValues, moveItem } from './reorder-utils.js';
 import { parseCommittedTempo, parseTempoDraft } from './tempo-utils.js';
 import {
+  generateDistinctProgression,
   generateProgression,
   rebuildProgression,
   getFeasibleKeyRoots,
@@ -724,7 +725,7 @@ function renderProgression() {
 
 function regenerateProgression() {
   state.shapeOverrides = {};
-  const result = generateProgression(state, chordLibrary);
+  const result = generateDistinctProgression(state, chordLibrary, state.progression);
   if (result.warning) {
     state.progression = null;
     updateWarning(result.warning);
