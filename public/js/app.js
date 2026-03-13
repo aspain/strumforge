@@ -2,6 +2,7 @@ import { AudioEngine, GROOVES } from './audio-engine.js';
 import { loadChordLibrary, selectShapeSequence } from './chord-library.js';
 import { renderChordDiagram } from './chord-diagram.js';
 import { getKeyTonicName, listPitchClasses } from './music-theory.js';
+import { moveIndex, moveIndexedValues, moveItem } from './reorder-utils.js';
 import {
   generateProgression,
   rebuildProgression,
@@ -23,7 +24,8 @@ const state = {
   playChords: false,
   activeChordIndex: -1,
   progression: null,
-  shapeOverrides: {}
+  shapeOverrides: {},
+  pendingHandleFocusIndex: null
 };
 
 const elements = {
@@ -48,6 +50,8 @@ const elements = {
 };
 
 let chordLibrary;
+let reorderStatus;
+let dragSession = null;
 const audioEngine = new AudioEngine(({ beatIndex, chordIndex }) => {
   renderBeatPulse(beatIndex);
   setActiveChord(chordIndex);
@@ -154,6 +158,352 @@ function updateTransportButton(isPlaying) {
   elements.transportButton.setAttribute('aria-pressed', String(isPlaying));
 }
 
+function ensureReorderStatusRegion() {
+  if (reorderStatus) return reorderStatus;
+
+  reorderStatus = document.createElement('div');
+  reorderStatus.className = 'sr-only';
+  reorderStatus.setAttribute('aria-live', 'polite');
+  reorderStatus.setAttribute('aria-atomic', 'true');
+  document.body.append(reorderStatus);
+  return reorderStatus;
+}
+
+function announceReorder(message) {
+  const liveRegion = ensureReorderStatusRegion();
+  liveRegion.textContent = '';
+  window.setTimeout(() => {
+    liveRegion.textContent = message;
+  }, 0);
+}
+
+function focusPendingHandle() {
+  if (!Number.isInteger(state.pendingHandleFocusIndex)) return;
+  const index = state.pendingHandleFocusIndex;
+  state.pendingHandleFocusIndex = null;
+  const handle = elements.progressionGrid.querySelector(`[data-reorder-handle="${index}"]`);
+  if (handle) {
+    window.requestAnimationFrame(() => handle.focus());
+  }
+}
+
+function moveChord(fromIndex, toIndex, { focusHandle = false, announceMove = false } = {}) {
+  if (!state.progression?.chords?.length) return;
+  if (fromIndex === toIndex) return;
+  if (
+    fromIndex < 0
+    || toIndex < 0
+    || fromIndex >= state.progression.chords.length
+    || toIndex >= state.progression.chords.length
+  ) {
+    return;
+  }
+
+  const movedChord = state.progression.chords[fromIndex];
+  state.progression = {
+    ...state.progression,
+    chords: moveItem(state.progression.chords, fromIndex, toIndex)
+  };
+  state.shapeOverrides = moveIndexedValues(
+    state.shapeOverrides,
+    state.progression.chords.length,
+    fromIndex,
+    toIndex
+  );
+  state.activeChordIndex = moveIndex(state.activeChordIndex, fromIndex, toIndex);
+
+  if (focusHandle) {
+    state.pendingHandleFocusIndex = toIndex;
+  }
+
+  renderProgression();
+
+  if (announceMove) {
+    announceReorder(`Moved ${movedChord.label} to position ${toIndex + 1} of ${state.progression.chords.length}.`);
+  }
+}
+
+function captureCardPositions(excludedCard = null) {
+  return new Map(
+    Array.from(elements.progressionGrid.querySelectorAll('[data-chord-card]'))
+      .filter((card) => card !== excludedCard)
+      .map((card) => [card, card.getBoundingClientRect()])
+  );
+}
+
+function animateCardReflow(previousRects) {
+  if (!previousRects?.size) return;
+
+  Array.from(elements.progressionGrid.querySelectorAll('[data-chord-card]')).forEach((card) => {
+    const previousRect = previousRects.get(card);
+    if (!previousRect) return;
+
+    const nextRect = card.getBoundingClientRect();
+    const deltaX = previousRect.left - nextRect.left;
+    const deltaY = previousRect.top - nextRect.top;
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+
+    card.style.setProperty('--card-translate-x', `${deltaX}px`);
+    card.style.setProperty('--card-translate-y', `${deltaY}px`);
+    card.getBoundingClientRect();
+
+    window.requestAnimationFrame(() => {
+      card.style.setProperty('--card-translate-x', '0px');
+      card.style.setProperty('--card-translate-y', '0px');
+    });
+  });
+}
+
+function buildCardRows(cards) {
+  const rows = [];
+
+  cards.forEach((card, index) => {
+    const rect = card.getBoundingClientRect();
+    const rowTolerance = Math.max(12, rect.height * 0.22);
+    const previousRow = rows[rows.length - 1];
+
+    if (previousRow && Math.abs(previousRow.top - rect.top) <= rowTolerance) {
+      previousRow.items.push({
+        card,
+        rect,
+        insertionIndex: index
+      });
+      previousRow.bottom = Math.max(previousRow.bottom, rect.bottom);
+      previousRow.centerY = (previousRow.top + previousRow.bottom) / 2;
+      return;
+    }
+
+    rows.push({
+      top: rect.top,
+      bottom: rect.bottom,
+      centerY: rect.top + rect.height / 2,
+      items: [
+        {
+          card,
+          rect,
+          insertionIndex: index
+        }
+      ]
+    });
+  });
+
+  return rows;
+}
+
+function findClosestRow(rows, pointerY) {
+  if (pointerY <= rows[0].top) return rows[0];
+  if (pointerY >= rows[rows.length - 1].bottom) return rows[rows.length - 1];
+
+  return rows.reduce((bestRow, row) => {
+    if (pointerY >= row.top && pointerY <= row.bottom) return row;
+    if (!bestRow) return row;
+
+    const currentDistance = Math.abs(pointerY - row.centerY);
+    const bestDistance = Math.abs(pointerY - bestRow.centerY);
+    return currentDistance < bestDistance ? row : bestRow;
+  }, null);
+}
+
+function getGhostMetrics(session) {
+  const left = session.currentX - session.offsetX;
+  const top = session.currentY - session.offsetY;
+  const width = session.cardWidth;
+  const height = session.cardHeight;
+
+  return {
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+    centerX: left + width / 2,
+    centerY: top + height / 2
+  };
+}
+
+function getNearestInsertionIndex(ghostMetrics, placeholderCard) {
+  const siblingCards = Array.from(elements.progressionGrid.querySelectorAll('[data-chord-card]'))
+    .filter((card) => card !== placeholderCard);
+  if (!siblingCards.length) return 0;
+
+  const rows = buildCardRows(siblingCards);
+  const activeRow = findClosestRow(rows, ghostMetrics.centerY);
+  if (!activeRow) return 0;
+
+  if (activeRow.items.length === 1) {
+    const [{ rect, insertionIndex }] = activeRow.items;
+    return ghostMetrics.centerX < rect.left + rect.width / 2 ? insertionIndex : insertionIndex + 1;
+  }
+
+  for (const item of activeRow.items) {
+    const midpoint = item.rect.left + item.rect.width / 2;
+    if (ghostMetrics.centerX < midpoint) {
+      return item.insertionIndex;
+    }
+  }
+
+  return activeRow.items[activeRow.items.length - 1].insertionIndex + 1;
+}
+
+function positionDragGhost(session) {
+  if (!session?.ghost) return;
+  session.ghost.style.left = `${session.currentX - session.offsetX}px`;
+  session.ghost.style.top = `${session.currentY - session.offsetY}px`;
+}
+
+function updateDragPlaceholder(session) {
+  if (!session?.activated || !session.placeholderCard) return;
+
+  const nextIndex = getNearestInsertionIndex(getGhostMetrics(session), session.placeholderCard);
+  if (nextIndex === session.targetIndex) return;
+  session.targetIndex = nextIndex;
+
+  const previousRects = captureCardPositions(session.placeholderCard);
+  const siblings = Array.from(elements.progressionGrid.querySelectorAll('[data-chord-card]'))
+    .filter((card) => card !== session.placeholderCard);
+  const nextSibling = siblings[nextIndex] ?? null;
+  elements.progressionGrid.insertBefore(session.placeholderCard, nextSibling);
+  animateCardReflow(previousRects);
+}
+
+function activateDragSession(session) {
+  if (!session || session.activated) return;
+  session.activated = true;
+  session.handle.classList.add('dragging');
+  document.body.classList.add('is-reordering');
+
+  const rect = session.placeholderCard.getBoundingClientRect();
+  session.offsetX = session.currentX - rect.left;
+  session.offsetY = session.currentY - rect.top;
+  session.cardWidth = rect.width;
+  session.cardHeight = rect.height;
+  session.targetIndex = session.sourceIndex;
+
+  session.ghost = session.placeholderCard.cloneNode(true);
+  session.ghost.classList.add('drag-ghost');
+  session.ghost.removeAttribute('data-chord-card');
+  session.ghost.setAttribute('aria-hidden', 'true');
+  session.ghost.style.width = `${rect.width}px`;
+  session.ghost.style.height = `${rect.height}px`;
+  document.body.append(session.ghost);
+
+  session.placeholderCard.classList.add('drag-placeholder');
+  announceReorder(`Reordering ${session.label}. Move to a new position, then release.`);
+  positionDragGhost(session);
+}
+
+function clearPendingDrag(session) {
+  if (session?.holdTimer) {
+    window.clearTimeout(session.holdTimer);
+    session.holdTimer = null;
+  }
+}
+
+function cleanupDragSession(session) {
+  clearPendingDrag(session);
+  if (!session) return;
+  session.handle.classList.remove('dragging');
+  document.body.classList.remove('is-reordering');
+  session.placeholderCard.classList.remove('drag-placeholder');
+  session.ghost?.remove();
+  try {
+    session.handle.releasePointerCapture(session.pointerId);
+  } catch {
+    // Pointer capture may already be released.
+  }
+  window.removeEventListener('pointermove', handlePointerMove);
+  window.removeEventListener('pointerup', handlePointerEnd);
+  window.removeEventListener('pointercancel', handlePointerEnd);
+  dragSession = null;
+}
+
+function handlePointerMove(event) {
+  if (!dragSession || event.pointerId !== dragSession.pointerId) return;
+  dragSession.currentX = event.clientX;
+  dragSession.currentY = event.clientY;
+
+  if (!dragSession.activated) {
+    const movedTooFar = Math.hypot(
+      dragSession.currentX - dragSession.startX,
+      dragSession.currentY - dragSession.startY
+    ) > 10;
+
+    if (dragSession.pointerType !== 'mouse' && movedTooFar) {
+      cleanupDragSession(dragSession);
+    }
+    return;
+  }
+
+  event.preventDefault();
+  positionDragGhost(dragSession);
+  updateDragPlaceholder(dragSession);
+}
+
+function handlePointerEnd(event) {
+  if (!dragSession || event.pointerId !== dragSession.pointerId) return;
+
+  const completedSession = dragSession;
+  const wasActivated = completedSession.activated;
+  const fromIndex = completedSession.sourceIndex;
+  const toIndex = completedSession.targetIndex;
+  cleanupDragSession(completedSession);
+
+  if (wasActivated && fromIndex !== toIndex) {
+    moveChord(fromIndex, toIndex, {
+      focusHandle: true,
+      announceMove: true
+    });
+  }
+}
+
+function beginPointerReorder(event, handle) {
+  if (!state.progression?.chords?.length || state.progression.chords.length < 2) return;
+  const card = handle.closest('[data-chord-card]');
+  if (!card) return;
+
+  if (dragSession) {
+    cleanupDragSession(dragSession);
+  }
+
+  const sourceIndex = Number(card.getAttribute('data-chord-card'));
+  const pointerType = event.pointerType || 'mouse';
+  const session = {
+    pointerId: event.pointerId,
+    pointerType,
+    sourceIndex,
+    targetIndex: sourceIndex,
+    label: state.progression.chords[sourceIndex].label,
+    handle,
+    placeholderCard: card,
+    ghost: null,
+    activated: false,
+    holdTimer: null,
+    startX: event.clientX,
+    startY: event.clientY,
+    currentX: event.clientX,
+    currentY: event.clientY,
+    offsetX: 0,
+    offsetY: 0,
+    cardWidth: 0,
+    cardHeight: 0
+  };
+
+  dragSession = session;
+  handle.setPointerCapture(event.pointerId);
+  window.addEventListener('pointermove', handlePointerMove);
+  window.addEventListener('pointerup', handlePointerEnd);
+  window.addEventListener('pointercancel', handlePointerEnd);
+  event.preventDefault();
+
+  if (pointerType === 'mouse') {
+    activateDragSession(session);
+    return;
+  }
+
+  session.holdTimer = window.setTimeout(() => {
+    activateDragSession(session);
+  }, 180);
+}
+
 function renderEmptyProgression({
   title = NO_PLAYABLE_LOOP_WARNING
 } = {}) {
@@ -236,12 +586,29 @@ function renderProgression() {
             ${totalCandidates < 2 ? 'Only shape' : `Swap shape (${selectedShapes.selectedIndices[index] + 1}/${totalCandidates})`}
           </button>
         </div>
+        <button
+          class="reorder-handle"
+          type="button"
+          data-reorder-handle="${index}"
+          aria-label="Reorder ${chord.label}"
+          title="Drag to reorder"
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <circle cx="5" cy="4" r="1.2"></circle>
+            <circle cx="11" cy="4" r="1.2"></circle>
+            <circle cx="5" cy="8" r="1.2"></circle>
+            <circle cx="11" cy="8" r="1.2"></circle>
+            <circle cx="5" cy="12" r="1.2"></circle>
+            <circle cx="11" cy="12" r="1.2"></circle>
+          </svg>
+        </button>
       </article>
     `;
   }).join('');
 
   setActiveChord(state.activeChordIndex);
   updateStatusLine();
+  focusPendingHandle();
 }
 
 function regenerateProgression() {
@@ -382,6 +749,47 @@ function attachEventListeners() {
     renderProgression();
   });
 
+  elements.progressionGrid.addEventListener('pointerdown', (event) => {
+    const handle = event.target.closest('[data-reorder-handle]');
+    if (!handle) return;
+    beginPointerReorder(event, handle);
+  });
+
+  elements.progressionGrid.addEventListener('keydown', (event) => {
+    const handle = event.target.closest('[data-reorder-handle]');
+    if (!handle || !state.progression?.chords?.length) return;
+
+    const index = Number(handle.getAttribute('data-reorder-handle'));
+    const lastIndex = state.progression.chords.length - 1;
+    let nextIndex = index;
+
+    switch (event.key) {
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = Math.max(0, index - 1);
+        break;
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = Math.min(lastIndex, index + 1);
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = lastIndex;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    if (nextIndex === index) return;
+    moveChord(index, nextIndex, {
+      focusHandle: true,
+      announceMove: true
+    });
+  });
+
   elements.playDrumsToggle.addEventListener('change', () => {
     state.playDrums = elements.playDrumsToggle.checked;
     syncTransportMode();
@@ -420,6 +828,7 @@ function attachEventListeners() {
 }
 
 async function init() {
+  ensureReorderStatusRegion();
   renderKeyOptions();
   renderGrooveOptions();
   syncTempo(state.tempo);
