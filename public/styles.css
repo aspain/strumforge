@@ -454,9 +454,18 @@ select:focus-visible {
   transition: none;
 }
 
+.transport-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--control-height) - 12px);
+  white-space: nowrap;
+}
+
 .transport-toggle {
   display: inline-flex;
   align-items: center;
+  min-height: calc(var(--control-height) - 12px);
   gap: 6px;
   padding: 7px 10px;
   border-radius: 999px;
@@ -1449,6 +1458,14 @@ input[type='radio'] {
   opacity: 0.45;
   transform: none;
   background: #bca695;
+}
+
+.transport-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  transform: none;
+  background: #bca695;
+  color: #f7eee6;
 }
 
 @media (min-width: 1041px) {

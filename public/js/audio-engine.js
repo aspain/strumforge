@@ -251,6 +251,7 @@ export class AudioEngine {
     this.currentStep = 0;
     this.currentBar = 0;
     this.nextStepTime = 0;
+    this.pulseTimeoutIds = new Set();
     this.resumeAfterInterruption = false;
   }
 
@@ -410,6 +411,22 @@ export class AudioEngine {
     return 60 / this.tempo / this.groove.subdivisionsPerBeat;
   }
 
+  queuePulse(payload, time) {
+    const delay = Math.max(0, (time - this.audioContext.currentTime) * 1000);
+    const timeoutId = window.setTimeout(() => {
+      this.pulseTimeoutIds.delete(timeoutId);
+      this.onPulse(payload);
+    }, delay);
+    this.pulseTimeoutIds.add(timeoutId);
+  }
+
+  clearQueuedPulses() {
+    this.pulseTimeoutIds.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    this.pulseTimeoutIds.clear();
+  }
+
   scheduleStep(time, stepIndex, barIndex) {
     const beatIndex = Math.floor(stepIndex / this.groove.subdivisionsPerBeat);
     const isBeat = stepIndex % this.groove.subdivisionsPerBeat === 0;
@@ -432,11 +449,10 @@ export class AudioEngine {
     }
     if (isBeat) {
       if (this.playDrums) this.triggerClick(time, beatIndex === 0);
-      const delay = Math.max(0, (time - this.audioContext.currentTime) * 1000);
       const chordIndex = this.playChords && this.chordSequence.length
         ? barIndex % this.chordSequence.length
         : -1;
-      window.setTimeout(() => this.onPulse({ beatIndex, chordIndex }), delay);
+      this.queuePulse({ beatIndex, chordIndex }, time);
     }
   }
 
@@ -473,6 +489,7 @@ export class AudioEngine {
       window.clearInterval(this.schedulerId);
       this.schedulerId = null;
     }
+    this.clearQueuedPulses();
     this.onPulse({ beatIndex: -1, chordIndex: -1 });
   }
 
