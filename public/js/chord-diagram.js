@@ -86,9 +86,12 @@ export function renderChordDiagram(shape, options = {}) {
   const model = buildDiagramModel(shape, options);
   const bottomY = 28 + model.visibleFrets * 24;
   const viewBoxHeight = bottomY + 18;
+  const viewBoxLeft = -12;
+  const viewBoxWidth = 156;
   const baseFretLabelY = yForFret(0);
+  const baseFretLabelX = model.baseFret >= 10 ? 17 : 18;
   const baseFretText = model.baseFret > 1
-    ? `<text x="0" y="${baseFretLabelY}" class="diagram-basefret">${model.baseFret}fr</text>`
+    ? `<text x="${baseFretLabelX}" y="${baseFretLabelY}" class="diagram-basefret">${model.baseFret}fr</text>`
     : '';
 
   const strings = Array.from({ length: 6 }, (_, index) => {
@@ -120,7 +123,7 @@ export function renderChordDiagram(shape, options = {}) {
   )).join('');
 
   return `
-    <svg viewBox="0 0 144 ${viewBoxHeight}" class="chord-diagram" aria-hidden="true" focusable="false">
+    <svg viewBox="${viewBoxLeft} 0 ${viewBoxWidth} ${viewBoxHeight}" class="chord-diagram" aria-hidden="true" focusable="false">
       ${baseFretText}
       ${strings}
       ${frets}

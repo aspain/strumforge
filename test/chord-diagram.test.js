@@ -51,5 +51,20 @@ test('high-position diagrams place the base fret label beside the top displayed 
 
   const svg = renderChordDiagram(shape);
 
-  assert.match(svg, /<text x="0" y="28" class="diagram-basefret">5fr<\/text>/);
+  assert.match(svg, /<svg viewBox="-12 0 156 166" class="chord-diagram"/);
+  assert.match(svg, /<text x="18" y="28" class="diagram-basefret">5fr<\/text>/);
+});
+
+test('double-digit base fret labels shift slightly left to preserve clearance from the diagram', () => {
+  const shape = {
+    frets: [-1, 11, 13, 13, -1, -1],
+    fingers: [0, 1, 3, 4, 0, 0],
+    barres: [],
+    baseFret: 11
+  };
+
+  const svg = renderChordDiagram(shape);
+
+  assert.match(svg, /<svg viewBox="-12 0 156 166" class="chord-diagram"/);
+  assert.match(svg, /<text x="17" y="28" class="diagram-basefret">11fr<\/text>/);
 });

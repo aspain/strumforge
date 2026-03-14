@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { getCandidateShapesForChord, hydrateChordLibrary } from '../public/js/chord-library.js';
+import { getCandidateShapesForChord, hydrateChordLibrary, selectShapeSequence } from '../public/js/chord-library.js';
 
 const OPEN_STRING_PITCHES = [4, 9, 2, 7, 11, 4];
 
@@ -154,4 +154,26 @@ test('triads and seventh chord shapes surface as real alternate candidates when 
   );
   assert.ok(majorSevenCandidates.some((shape) => shape.label === 'Open Cmaj7'));
   assert.ok(majorSevenCandidates.some((shape) => shape.label === 'Amaj7-shape barre'));
+});
+
+test('shape selection preserves the preferred starting candidate when overrides cycle through alternates', async () => {
+  const library = await loadLibrary();
+  const chord = { id: 'C:maj', pitchClass: 0, quality: 'maj', label: 'C' };
+  const enabledShapeTypes = new Set(['open', 'triad']);
+
+  const initial = selectShapeSequence([chord], library, enabledShapeTypes, 'best-fit');
+  assert.ok(initial);
+  assert.equal(initial.selected.length, 1);
+  assert.equal(initial.preferredIndices.length, 1);
+  assert.equal(initial.selectedIndices.length, 1);
+  assert.equal(initial.preferredIndices[0], initial.selectedIndices[0]);
+
+  const totalCandidates = initial.candidatesByIndex[0].length;
+  assert.ok(totalCandidates > 1);
+
+  const nextIndex = (initial.preferredIndices[0] + 1) % totalCandidates;
+  const overridden = selectShapeSequence([chord], library, enabledShapeTypes, 'best-fit', { 0: nextIndex });
+  assert.ok(overridden);
+  assert.equal(overridden.preferredIndices[0], initial.preferredIndices[0]);
+  assert.equal(overridden.selectedIndices[0], nextIndex);
 });

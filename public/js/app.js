@@ -246,12 +246,18 @@ function renderBeatPulse(activeBeat) {
 }
 
 function useCompactSwapShapeLabel() {
-  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 720px)').matches;
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 1040px)').matches;
 }
 
-function formatSwapShapeLabel(selectedIndex, totalCandidates) {
+function getSwapShapeCyclePosition(selectedIndex, preferredIndex, totalCandidates) {
+  if (totalCandidates < 1) return 0;
+  const normalizedPreferredIndex = Number.isInteger(preferredIndex) ? preferredIndex : 0;
+  return ((selectedIndex - normalizedPreferredIndex + totalCandidates) % totalCandidates) + 1;
+}
+
+function formatSwapShapeLabel(selectedIndex, totalCandidates, preferredIndex = 0) {
   if (totalCandidates < 2) return 'Only shape';
-  const counter = `${selectedIndex + 1}/${totalCandidates}`;
+  const counter = `${getSwapShapeCyclePosition(selectedIndex, preferredIndex, totalCandidates)}/${totalCandidates}`;
   return useCompactSwapShapeLabel() ? `Swap (${counter})` : `Swap shape (${counter})`;
 }
 
@@ -681,7 +687,16 @@ function renderProgression() {
   elements.progressionKeyDisplay.classList.remove('is-hidden');
   elements.progressionGrid.classList.remove('progression-grid-empty');
   elements.progressionKeyDisplay.innerHTML = `
-    <strong class="progression-key-title">${formatKeyLabel(state.progression.keyRoot, state.progression.mode)}</strong>
+    <div class="progression-key-header">
+      <strong class="progression-key-title">${formatKeyLabel(state.progression.keyRoot, state.progression.mode)}</strong>
+      <button
+        class="generate-button progression-generate-button"
+        type="button"
+        data-generate-button="progression-header"
+      >
+        Generate
+      </button>
+    </div>
   `;
   elements.progressionGrid.innerHTML = state.progression.chords.map((chord, index) => {
     const shape = selectedShapes.selected[index];
@@ -706,7 +721,11 @@ function renderProgression() {
             data-cycle-shape="${index}"
             ${totalCandidates < 2 ? 'disabled' : ''}
           >
-            ${formatSwapShapeLabel(selectedShapes.selectedIndices[index], totalCandidates)}
+            ${formatSwapShapeLabel(
+              selectedShapes.selectedIndices[index],
+              totalCandidates,
+              selectedShapes.preferredIndices[index]
+            )}
           </button>
         </div>
         <button
@@ -820,6 +839,12 @@ function refreshProgression(rebuildStrategy = 'preserve') {
 function attachEventListeners() {
   syncTransportMode();
   elements.generateButton.addEventListener('click', regenerateProgression);
+  elements.progressionKeyDisplay.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-generate-button="progression-header"]');
+    if (!button) return;
+    regenerateProgression();
+  });
+
   elements.keyRootSelect.addEventListener('change', () => {
     state.keyRoot = elements.keyRootSelect.value === 'random'
       ? null

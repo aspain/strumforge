@@ -575,6 +575,8 @@ export function selectShapeSequence(chords, library, enabledShapeTypes, shapeMod
     }
   }
 
+  const preferredIndices = [...selectedIndices];
+
   const selected = candidatesByIndex.map((candidates, index) => {
     const overrideIndex = overrides[index];
     if (Number.isInteger(overrideIndex) && overrideIndex >= 0 && overrideIndex < candidates.length) {
@@ -585,6 +587,7 @@ export function selectShapeSequence(chords, library, enabledShapeTypes, shapeMod
 
   return {
     selected,
+    preferredIndices,
     selectedIndices,
     candidatesByIndex
   };
