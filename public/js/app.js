@@ -4,6 +4,7 @@ import { renderChordDiagram } from './chord-diagram.js';
 import { getDiagramZoomStartIndex } from './diagram-zoom.js';
 import { getKeyTonicName, listPitchClasses } from './music-theory.js';
 import { moveIndex, moveIndexedValues, moveItem } from './reorder-utils.js';
+import { setScreenWakeEnabled } from './screen-wake.js';
 import { parseCommittedTempo, parseTempoDraft } from './tempo-utils.js';
 import {
   generateDistinctProgression,
@@ -793,11 +794,16 @@ function updateWarning(message) {
   state.warningMessage = message || '';
 }
 
+function syncPlaybackScreenWake() {
+  void setScreenWakeEnabled(audioEngine.isPlaying && !document.hidden);
+}
+
 function updateTransportButton(isPlaying) {
   document.querySelectorAll('[data-transport-button]').forEach((button) => {
     button.textContent = isPlaying ? 'Stop' : 'Play';
     button.setAttribute('aria-pressed', String(isPlaying));
   });
+  syncPlaybackScreenWake();
   syncProgressionHeaderActionsLayout();
 }
 
