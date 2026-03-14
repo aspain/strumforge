@@ -987,6 +987,8 @@ input[type='radio'] {
   --card-action-padding-block: 4px;
   --card-action-padding-inline: 10px;
   --card-action-reorder-clearance: 40px;
+  --card-title-shift-y: 1px;
+  --card-actions-shift-y: -1px;
   --card-translate-x: 0px;
   --card-translate-y: 0px;
   position: relative;
@@ -1005,6 +1007,10 @@ input[type='radio'] {
     box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
+}
+
+.chord-card:not(.empty-state-card) {
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .empty-state-card {
@@ -1056,7 +1062,7 @@ input[type='radio'] {
   display: grid;
   grid-template-rows: minmax(var(--card-chip-row-height), auto) minmax(var(--card-title-row-height), auto);
   row-gap: var(--card-header-gap);
-  align-content: start;
+  align-content: stretch;
   width: 100%;
   min-height: calc(var(--card-chip-row-height) + var(--card-title-row-height) + var(--card-header-gap));
   padding: 1px 1px 0;
@@ -1084,7 +1090,13 @@ input[type='radio'] {
   width: calc(var(--card-stage-width) - var(--card-action-reorder-clearance));
   max-width: 100%;
   margin-inline: auto;
-  padding-top: 2px;
+  padding-top: 0;
+}
+
+.chord-card:not(.empty-state-card) .card-actions {
+  grid-row: 3;
+  align-self: center;
+  transform: translateY(var(--card-actions-shift-y));
 }
 
 .step-chip {
@@ -1141,7 +1153,15 @@ input[type='radio'] {
 
 .card-header > h3 {
   justify-self: center;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--card-title-row-height);
   text-align: center;
+  line-height: 1.02;
+  padding-bottom: 0.06em;
+  transform: translateY(var(--card-title-shift-y));
 }
 
 .card-meta {
@@ -1159,6 +1179,11 @@ input[type='radio'] {
   margin-inline: auto;
   margin-top: calc(var(--diagram-top-pull) * -1);
   padding: 0;
+}
+
+.chord-card:not(.empty-state-card) .diagram-wrap {
+  grid-row: 2;
+  align-self: start;
 }
 
 .diagram-frame {
@@ -1210,11 +1235,14 @@ input[type='radio'] {
   width: min(100%, 430px);
   max-width: 430px;
   min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
   padding: 14px 14px 16px;
   gap: 8px;
   --card-stage-width: min(calc(100% - 24px), 340px);
   --diagram-top-pull: 8px;
   --card-action-reorder-clearance: 0px;
+  --card-title-shift-y: 2px;
+  --card-actions-shift-y: -2px;
 }
 
 .diagram-zoom-card.playing {
@@ -1230,6 +1258,27 @@ input[type='radio'] {
 
 .chord-card.diagram-zoom-card h3 {
   font-size: clamp(20px, 1.45vw, 24px);
+}
+
+.diagram-zoom-card .diagram-wrap {
+  grid-row: 2;
+  align-self: start;
+}
+
+.diagram-zoom-card .card-actions {
+  grid-row: 3;
+  align-self: center;
+  grid-template-columns: max-content max-content;
+  width: auto;
+  max-width: 100%;
+  gap: 10px;
+  padding-top: 0;
+}
+
+.diagram-zoom-card .card-actions .preview-chord,
+.diagram-zoom-card .card-actions .swap-shape {
+  padding: 5px 12px;
+  font-size: 10px;
 }
 
 .empty-state-visual {
@@ -1349,7 +1398,7 @@ input[type='radio'] {
   text-anchor: end;
   font-size: 11px;
   font-weight: 800;
-  fill: var(--muted);
+  fill: var(--ink);
   dominant-baseline: middle;
 }
 
@@ -1360,9 +1409,11 @@ input[type='radio'] {
   justify-content: center;
   width: auto;
   min-width: max-content;
-  padding: var(--card-action-padding-block) var(--card-action-padding-inline);
+  min-height: calc(var(--card-action-font-size) + (var(--card-action-padding-block) * 2) + 4px);
+  padding-block: var(--card-action-padding-block);
+  padding-inline: var(--card-action-padding-inline);
   font-size: var(--card-action-font-size);
-  line-height: 1;
+  line-height: 1.1;
   white-space: nowrap;
 }
 
@@ -1534,6 +1585,7 @@ input[type='radio'] {
   .tempo-block {
     grid-template-rows: auto auto auto minmax(0, 1fr);
     align-content: stretch;
+    padding-bottom: 7px;
   }
 
   .tempo-block .beat-box {
@@ -1582,6 +1634,8 @@ input[type='radio'] {
     --card-action-font-size: 8px;
     --card-action-padding-block: 4px;
     --card-action-padding-inline: 9px;
+    --card-title-shift-y: 2px;
+    --card-actions-shift-y: -4px;
     padding: 8px 9px 10px;
   }
 
@@ -2201,6 +2255,10 @@ input[type='range'] {
     --control-rail: 1px;
   }
 
+  .tempo-block {
+    padding-bottom: 6px;
+  }
+
   .control-grid {
     gap: 6px;
   }
@@ -2289,6 +2347,8 @@ input[type='range'] {
     --card-title-row-height: 16px;
     --card-header-gap: 1px;
     --diagram-top-pull: 10px;
+    --card-title-shift-y: 2px;
+    --card-actions-shift-y: -4px;
   }
 
   .chord-card {
