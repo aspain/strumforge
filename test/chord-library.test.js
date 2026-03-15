@@ -15,6 +15,10 @@ const QUALITY_RULES = {
     required: [0, 3, 7],
     allowed: [0, 3, 7]
   },
+  dim: {
+    required: [0, 3, 6],
+    allowed: [0, 3, 6]
+  },
   '5': {
     required: [0, 7],
     allowed: [0, 7]
@@ -154,6 +158,14 @@ test('triads and seventh chord shapes surface as real alternate candidates when 
   );
   assert.ok(majorSevenCandidates.some((shape) => shape.label === 'Open Cmaj7'));
   assert.ok(majorSevenCandidates.some((shape) => shape.label === 'Amaj7-shape barre'));
+
+  const diminishedCandidates = getCandidateShapesForChord(
+    { id: 'B:dim', pitchClass: 11, quality: 'dim', label: 'Bdim' },
+    library,
+    new Set(['triad'])
+  );
+  assert.ok(diminishedCandidates.some((shape) => shape.label === 'Ddim-shape triad'));
+  assert.ok(diminishedCandidates.some((shape) => shape.label === '3-2-1 root position triad'));
 });
 
 test('shape selection preserves the preferred starting candidate when overrides cycle through alternates', async () => {

@@ -2,7 +2,7 @@ import { AudioEngine, GROOVES } from './audio-engine.js';
 import { loadChordLibrary, selectShapeSequence } from './chord-library.js';
 import { renderChordDiagram } from './chord-diagram.js';
 import { getDiagramZoomStartIndex } from './diagram-zoom.js';
-import { getKeyTonicName, listPitchClasses } from './music-theory.js';
+import { getKeyTonicName, getModeDisplayName, listPitchClasses } from './music-theory.js';
 import { moveIndex, moveIndexedValues, moveItem } from './reorder-utils.js';
 import { setScreenWakeEnabled } from './screen-wake.js';
 import { parseCommittedTempo, parseTempoDraft } from './tempo-utils.js';
@@ -16,7 +16,7 @@ import {
 
 const state = {
   keyRoot: null,
-  modePreference: 'auto',
+  modePreference: 'ionian',
   enabledShapeTypes: new Set(['open']),
   enabledFlavorOptions: new Set(),
   leftHanded: false,
@@ -38,6 +38,7 @@ const elements = {
   currentKeyLabel: document.getElementById('current-key-label'),
   beatCounterLabel: document.getElementById('beat-counter-label'),
   keyRootSelect: document.getElementById('key-root-select'),
+  modeSelect: document.getElementById('mode-select'),
   leftHandedToggle: document.getElementById('left-handed-toggle'),
   controlActionsSlot: document.getElementById('control-actions-slot'),
   actionControls: document.getElementById('primary-action-controls'),
@@ -73,6 +74,16 @@ const narrowActionControlsQuery = typeof window.matchMedia === 'function'
 const touchInputQuery = typeof window.matchMedia === 'function'
   ? window.matchMedia('(hover: none), (pointer: coarse)')
   : null;
+const MODE_OPTIONS = [
+  { value: 'ionian', label: 'Ionian (major)' },
+  { value: 'dorian', label: 'Dorian' },
+  { value: 'phrygian', label: 'Phrygian' },
+  { value: 'lydian', label: 'Lydian' },
+  { value: 'mixolydian', label: 'Mixolydian' },
+  { value: 'aeolian', label: 'Aeolian (minor)' },
+  { value: 'locrian', label: 'Locrian' },
+  { value: 'blues', label: 'Blues' }
+];
 const audioEngine = new AudioEngine(({ beatIndex, chordIndex }) => {
   renderBeatPulse(beatIndex);
   setActiveChord(chordIndex);
@@ -541,17 +552,22 @@ function getSelectedShapes() {
 
 function formatKeyLabel(root, mode) {
   if (!mode) return 'Random';
-  return `${getKeyTonicName(mode, root)} ${mode === 'major' ? 'major' : 'minor'}`;
+  return `${getKeyTonicName(mode, root)} ${getModeDisplayName(mode)}`;
 }
 
 function formatKeyRootOption(pitchClass) {
-  if (state.modePreference === 'major' || state.modePreference === 'minor') {
-    return getKeyTonicName(state.modePreference, pitchClass);
-  }
+  return getKeyTonicName(state.modePreference, pitchClass);
+}
 
-  const majorName = getKeyTonicName('major', pitchClass);
-  const minorName = getKeyTonicName('minor', pitchClass);
-  return majorName === minorName ? majorName : `${majorName}/${minorName}`;
+function renderModeOptions() {
+  elements.modeSelect.innerHTML = MODE_OPTIONS
+    .map((option) => `<option value="${option.value}">${option.label}</option>`)
+    .join('');
+  elements.modeSelect.value = state.modePreference;
+}
+
+function syncModeControlFromState() {
+  elements.modeSelect.value = state.modePreference;
 }
 
 function renderKeyOptions() {
@@ -1283,6 +1299,12 @@ function readEnabledFlavorOptions() {
   );
 }
 
+function syncFlavorControlsFromState() {
+  document.querySelectorAll('input[name="flavor-option"]').forEach((node) => {
+    node.checked = state.enabledFlavorOptions.has(node.value);
+  });
+}
+
 function applyShapeFilters() {
   state.shapeOverrides = {};
   if (!state.progression || !chordLibrary) {
@@ -1332,11 +1354,10 @@ function attachEventListeners() {
     blurSelectAfterCommit(elements.keyRootSelect);
   });
 
-  document.querySelectorAll('input[name="mode-preference"]').forEach((node) => {
-    node.addEventListener('change', () => {
-      state.modePreference = document.querySelector('input[name="mode-preference"]:checked').value;
-      refreshProgression('preserve');
-    });
+  elements.modeSelect.addEventListener('change', () => {
+    state.modePreference = elements.modeSelect.value;
+    refreshProgression('preserve');
+    blurSelectAfterCommit(elements.modeSelect);
   });
 
   document.querySelectorAll('input[name="shape-type"]').forEach((node) => {
@@ -1349,6 +1370,7 @@ function attachEventListeners() {
   document.querySelectorAll('input[name="flavor-option"]').forEach((node) => {
     node.addEventListener('change', () => {
       readEnabledFlavorOptions();
+      syncFlavorControlsFromState();
       refreshProgression('reharmonize');
     });
   });
@@ -1472,6 +1494,9 @@ function attachEventListeners() {
 async function init() {
   applyPlatformClassNames();
   ensureReorderStatusRegion();
+  renderModeOptions();
+  syncModeControlFromState();
+  syncFlavorControlsFromState();
   syncRhythmControlsFromState();
   renderKeyOptions();
   syncTempo(state.tempo);
@@ -1488,8 +1513,16 @@ async function init() {
   regenerateProgression();
 
   // Some browsers restore prior form control values after module init.
-  window.requestAnimationFrame(() => syncRhythmControlsFromState());
-  window.setTimeout(() => syncRhythmControlsFromState(), 0);
+  window.requestAnimationFrame(() => {
+    syncModeControlFromState();
+    syncFlavorControlsFromState();
+    syncRhythmControlsFromState();
+  });
+  window.setTimeout(() => {
+    syncModeControlFromState();
+    syncFlavorControlsFromState();
+    syncRhythmControlsFromState();
+  }, 0);
   window.addEventListener('resize', () => {
     syncPrimaryActionControlsPlacement();
     syncProgressionHeaderActionsLayout();
@@ -1498,6 +1531,8 @@ async function init() {
 
 window.addEventListener('pageshow', () => {
   syncPrimaryActionControlsPlacement();
+  syncModeControlFromState();
+  syncFlavorControlsFromState();
   syncRhythmControlsFromState();
   syncProgressionHeaderActionsLayout();
   void restoreTransportAfterBackground();

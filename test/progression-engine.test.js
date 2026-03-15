@@ -83,7 +83,7 @@ test('generateProgression can build a C major open-chord loop when the key is lo
 
   assert.equal(progression.warning, '');
   assert.equal(progression.keyRoot, 0);
-  assert.equal(progression.mode, 'major');
+  assert.equal(progression.mode, 'ionian');
   assert.equal(progression.chords.length, 4);
   for (const chord of progression.chords) {
     const candidates = getCandidateShapesForChord(chord, library, new Set(['open']));
@@ -106,7 +106,7 @@ test('generateProgression treats a numeric keyRoot as fixed when keyLocked is om
 
   assert.equal(progression.warning, '');
   assert.equal(progression.keyRoot, 0);
-  assert.equal(progression.mode, 'major');
+  assert.equal(progression.mode, 'ionian');
 });
 
 test('generateProgression spells diatonic chords according to the locked key signature', async () => {
@@ -125,7 +125,7 @@ test('generateProgression spells diatonic chords according to the locked key sig
 
   assert.equal(progression.warning, '');
   assert.equal(progression.keyRoot, 4);
-  assert.equal(progression.mode, 'major');
+  assert.equal(progression.mode, 'ionian');
   assert.deepEqual(
     progression.chords.map((chord) => chord.label),
     ['E', 'B', 'C#m', 'A']
@@ -409,7 +409,7 @@ test('rebuildProgression preserves degree sequence while switching mode without 
   );
 
   assert.equal(rebuilt.warning, '');
-  assert.equal(rebuilt.mode, 'minor');
+  assert.equal(rebuilt.mode, 'aeolian');
   assert.deepEqual(
     rebuilt.chords.map((chord) => chord.degree),
     progression.chords.map((chord) => chord.degree)
@@ -510,6 +510,98 @@ test('rebuildProgression with reharmonize upgrades eligible major chords to sus/
     rebuilt.chords.some((chord) => ['sus2', 'sus4', 'add9'].includes(chord.quality)),
     'Expected at least one sus/add chord after reharmonizing'
   );
+});
+
+test('dorian mode builds a modal progression that highlights the major IV chord', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyLocked: true,
+      keyRoot: 2,
+      modePreference: 'dorian',
+      enabledShapeTypes: new Set(['open', 'barre']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.mode, 'dorian');
+  assert.deepEqual(
+    progression.chords.map((chord) => chord.id),
+    ['D:min', 'G:maj', 'C:maj', 'D:min']
+  );
+});
+
+test('mixolydian mode builds a modal progression around the flat-seven cadence', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyLocked: true,
+      keyRoot: 7,
+      modePreference: 'mixolydian',
+      enabledShapeTypes: new Set(['open', 'barre']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.mode, 'mixolydian');
+  assert.deepEqual(
+    progression.chords.map((chord) => chord.id),
+    ['G:maj', 'F:maj', 'C:maj', 'G:maj']
+  );
+});
+
+test('blues mode prefers dominant-function blues chords in an open E loop', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyLocked: true,
+      keyRoot: 4,
+      modePreference: 'blues',
+      enabledShapeTypes: new Set(['open']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.mode, 'blues');
+  assert.deepEqual(
+    progression.chords.map((chord) => chord.id),
+    ['E:7', 'A:7', 'E:7', 'B:7']
+  );
+});
+
+test('locrian mode can generate a theory-correct diminished tonic loop when triads are enabled', async () => {
+  const library = await loadLibrary();
+  const progression = generateProgression(
+    {
+      keyLocked: true,
+      keyRoot: 11,
+      modePreference: 'locrian',
+      enabledShapeTypes: new Set(['triad']),
+      enabledFlavorOptions: new Set()
+    },
+    library,
+    () => 0
+  );
+
+  assert.equal(progression.warning, '');
+  assert.equal(progression.mode, 'locrian');
+  assert.deepEqual(
+    progression.chords.map((chord) => chord.id),
+    ['B:dim', 'C:maj', 'A:min', 'B:dim']
+  );
+  progression.chords.forEach((chord) => {
+    const candidates = getCandidateShapesForChord(chord, library, new Set(['triad']));
+    assert.ok(candidates.length > 0, `Expected triad candidates for ${chord.label}`);
+  });
 });
 
 test('power chord shapes allow 5-chord qualities and playable power shapes', async () => {

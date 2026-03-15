@@ -113,8 +113,8 @@
 
         <div class="control-grid">
           <section class="control-block key-block" aria-label="Key controls">
-            <div class="key-row">
-              <div class="field key-root-field">
+            <div class="key-config-row">
+              <div class="field key-config-field select-field key-root-field">
                 <div class="field-label-row">
                   <label class="field-label" for="key-root-select">Key</label>
                   <button
@@ -131,22 +131,23 @@
                 </div>
                 <select id="key-root-select"></select>
               </div>
-              <div class="field key-diagram-field">
+              <div class="field key-config-field key-toggle-field">
                 <span class="field-label">Diagram</span>
                 <label class="toggle-row key-utility-toggle" for="left-handed-toggle">
                   <span>Left-handed</span>
                   <input id="left-handed-toggle" type="checkbox" />
                 </label>
               </div>
+              <label class="field key-config-field select-field mode-field" for="mode-select">
+                <span class="field-label">Mode</span>
+                <select id="mode-select" autocomplete="off"></select>
+              </label>
             </div>
 
-            <fieldset class="segmented-field mode-inline-field">
-              <legend>Mode</legend>
-              <div class="segmented mode-segmented inline-mode-segmented">
-                <label><input type="radio" name="mode-preference" value="auto" checked /> <span>Auto</span></label>
-                <label><input type="radio" name="mode-preference" value="major" /> <span>Major</span></label>
-                <label><input type="radio" name="mode-preference" value="minor" /> <span>Minor</span></label>
-              </div>
+            <fieldset class="checkbox-field checkbox-field-group checkbox-field-group-compact key-flavor-field key-flavor-field-inline">
+              <legend>Chord flavor</legend>
+              <label><input type="checkbox" name="flavor-option" value="seventh" /> <span>Sevenths</span></label>
+              <label><input type="checkbox" name="flavor-option" value="sus/add" /> <span>Suspended / add9</span></label>
             </fieldset>
           </section>
 
@@ -162,7 +163,7 @@
               <label><input type="checkbox" name="shape-type" value="power" /> <span>Power chords</span></label>
             </div>
 
-            <fieldset class="checkbox-field checkbox-field-group checkbox-field-group-compact">
+            <fieldset class="checkbox-field checkbox-field-group checkbox-field-group-compact key-flavor-field key-flavor-field-stacked" aria-hidden="true">
               <legend>Chord flavor</legend>
               <label><input type="checkbox" name="flavor-option" value="seventh" /> <span>Sevenths</span></label>
               <label><input type="checkbox" name="flavor-option" value="sus/add" /> <span>Suspended / add9</span></label>

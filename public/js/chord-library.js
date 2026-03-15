@@ -12,13 +12,14 @@ const TRIAD_STRING_GROUPS = [
 const TRIAD_QUALITY_INTERVALS = {
   maj: [0, 4, 7],
   min: [0, 3, 7],
+  dim: [0, 3, 6],
   sus2: [0, 2, 7],
   sus4: [0, 5, 7]
 };
 const TRIAD_INVERSION_INTERVALS = [
-  { id: 'root-position', label: 'root position', buildIntervals: (colorTone) => [0, colorTone, 7] },
-  { id: '1st-inversion', label: '1st inversion', buildIntervals: (colorTone) => [colorTone, 7, 12] },
-  { id: '2nd-inversion', label: '2nd inversion', buildIntervals: (colorTone) => [7, 12, 12 + colorTone] }
+  { id: 'root-position', label: 'root position', buildIntervals: (intervals) => [intervals[0], intervals[1], intervals[2]] },
+  { id: '1st-inversion', label: '1st inversion', buildIntervals: (intervals) => [intervals[1], intervals[2], intervals[0] + 12] },
+  { id: '2nd-inversion', label: '2nd inversion', buildIntervals: (intervals) => [intervals[2], intervals[0] + 12, intervals[1] + 12] }
 ];
 
 function matchesEnabledShapeTypes(shapeCategories, enabledShapeTypes) {
@@ -136,13 +137,12 @@ function makeAdjacentStringTriads(rootPitchClass, quality) {
   const intervals = TRIAD_QUALITY_INTERVALS[quality];
   if (!intervals) return [];
 
-  const colorTone = intervals[1];
   const categories = quality === 'sus2' || quality === 'sus4' ? ['triad', 'sus/add'] : ['triad'];
   const shapes = [];
 
   for (const stringGroup of TRIAD_STRING_GROUPS) {
     for (const inversion of TRIAD_INVERSION_INTERVALS) {
-      const voicing = findClosedTriadVoicing(rootPitchClass, inversion.buildIntervals(colorTone), stringGroup.stringIndexes);
+      const voicing = findClosedTriadVoicing(rootPitchClass, inversion.buildIntervals(intervals), stringGroup.stringIndexes);
       if (!voicing) continue;
 
       const frets = [-1, -1, -1, -1, -1, -1];
@@ -413,6 +413,16 @@ function makeFourthStringShape(rootPitchClass, quality) {
       difficulty: 2,
       canonicalRank: 28,
       positionScore: (rootFret || 1) + 0.25
+    },
+    dim: {
+      frets: [-1, -1, rootFret, rootFret + 1, rootFret + 3, rootFret + 1],
+      fingers: [0, 0, 1, 2, 4, 2],
+      barres: [],
+      label: 'Ddim-shape triad',
+      categories: ['triad'],
+      difficulty: 3,
+      canonicalRank: 29,
+      positionScore: (rootFret || 1) + 0.3
     },
     sus2: {
       frets: [-1, -1, rootFret, rootFret + 2, rootFret + 3, rootFret],

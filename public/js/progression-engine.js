@@ -1,11 +1,11 @@
-import { buildChordDefinition, listPitchClasses } from './music-theory.js';
+import { buildChordDefinition, listPitchClasses, normalizeMode } from './music-theory.js';
 import { getPlayableChordChoices } from './chord-library.js';
 
 export const NO_PLAYABLE_LOOP_WARNING = 'No playable loop with the current chord shapes.';
 export const LOCKED_KEY_CHORD_SHAPES_WARNING = 'That key does not fit your current chord shapes. Try unlocking the key or turning on Barre chords.';
 
 export const PROGRESSION_TEMPLATES = {
-  major: [
+  ionian: [
     { degrees: [1, 5, 6, 4], weight: 1.4 },
     { degrees: [1, 4, 5, 1], weight: 1.25 },
     { degrees: [1, 6, 4, 5], weight: 1.2 },
@@ -16,17 +16,60 @@ export const PROGRESSION_TEMPLATES = {
     { degrees: [6, 2, 5, 1], weight: 0.84 },
     { degrees: [1, 5, 3, 6], weight: 0.8 }
   ],
-  minor: [
+  dorian: [
+    { degrees: [1, 4, 7, 1], weight: 1.35 },
+    { degrees: [1, 7, 4, 1], weight: 1.18 },
+    { degrees: [1, 2, 4, 1], weight: 0.94 },
+    { degrees: [1, 4, 1, 7], weight: 0.92 },
+    { degrees: [1, 5, 4, 1], weight: 0.82 }
+  ],
+  phrygian: [
+    { degrees: [1, 2, 7, 1], weight: 1.34 },
+    { degrees: [1, 2, 4, 1], weight: 1.08 },
+    { degrees: [1, 7, 2, 1], weight: 0.96 },
+    { degrees: [1, 2, 6, 7], weight: 0.84 },
+    { degrees: [1, 4, 2, 1], weight: 0.8 }
+  ],
+  lydian: [
+    { degrees: [1, 2, 5, 1], weight: 1.32 },
+    { degrees: [1, 2, 6, 5], weight: 1.02 },
+    { degrees: [1, 5, 2, 1], weight: 0.94 },
+    { degrees: [1, 2, 1, 5], weight: 0.9 },
+    { degrees: [1, 3, 2, 5], weight: 0.78 }
+  ],
+  mixolydian: [
+    { degrees: [1, 7, 4, 1], weight: 1.36 },
+    { degrees: [1, 7, 4, 7], weight: 1.08 },
+    { degrees: [1, 4, 7, 1], weight: 1.02 },
+    { degrees: [1, 5, 4, 1], weight: 0.92 },
+    { degrees: [1, 7, 1, 4], weight: 0.86 }
+  ],
+  aeolian: [
     { degrees: [1, 7, 6, 7], weight: 1.3 },
     { degrees: [1, 6, 3, 7], weight: 1.1 },
     { degrees: [1, 4, 6, 7], weight: 1.0 },
     { degrees: [6, 7, 1, 1], weight: 0.9 },
     { degrees: [1, 4, 1, 7], weight: 0.88 }
+  ],
+  locrian: [
+    { degrees: [1, 2, 7, 1], weight: 1.24 },
+    { degrees: [1, 4, 2, 1], weight: 1.0 },
+    { degrees: [1, 2, 5, 1], weight: 0.9 },
+    { degrees: [1, 2, 7, 4], weight: 0.82 },
+    { degrees: [1, 4, 7, 2], weight: 0.76 }
+  ],
+  blues: [
+    { degrees: [1, 4, 1, 5], weight: 1.4 },
+    { degrees: [1, 4, 5, 4], weight: 1.18 },
+    { degrees: [1, 1, 4, 5], weight: 1.06 },
+    { degrees: [1, 4, 1, 1], weight: 0.9 },
+    { degrees: [1, 6, 2, 5], weight: 0.88 },
+    { degrees: [1, 7, 4, 5], weight: 0.76 }
   ]
 };
 
 const FUNCTIONAL_TEMPLATE_SKELETONS = {
-  major: [
+  ionian: [
     { roles: ['tonic-family', 'predominant', 'dominant-family', 'tonic'], weight: 0.78 },
     { roles: ['tonic', 'dominant-family', 'predominant', 'tonic'], weight: 0.72 },
     { roles: ['predominant', 'tonic', 'dominant-family', 'tonic'], weight: 0.68 },
@@ -34,7 +77,7 @@ const FUNCTIONAL_TEMPLATE_SKELETONS = {
     { roles: ['tonic', 'dominant-family', 'tonic', 'predominant'], weight: 0.58 },
     { roles: ['dominant-family', 'predominant', 'tonic', 'dominant-family'], weight: 0.52 }
   ],
-  minor: [
+  aeolian: [
     { roles: ['tonic-family', 'dominant-family', 'tonic-family', 'dominant-family'], weight: 0.78 },
     { roles: ['tonic-family', 'predominant', 'dominant-family', 'tonic'], weight: 0.72 },
     { roles: ['tonic-family', 'tonic-color', 'dominant-family', 'tonic-family'], weight: 0.66 },
@@ -353,11 +396,14 @@ function buildRoleDegreePools(playableDegrees) {
 }
 
 function buildFunctionalTemplates(mode, playableDegrees) {
+  const skeletons = FUNCTIONAL_TEMPLATE_SKELETONS[mode];
+  if (!skeletons?.length) return [];
+
   const templates = [];
   const pools = buildRoleDegreePools(playableDegrees);
   const seen = new Set();
 
-  FUNCTIONAL_TEMPLATE_SKELETONS[mode].forEach((skeleton) => {
+  skeletons.forEach((skeleton) => {
     const rolePools = skeleton.roles.map((role) => pools[role] || []);
     if (rolePools.some((pool) => !pool.length)) return;
 
@@ -401,7 +447,7 @@ function listTemplatesForKey(rootPitchClass, mode, enabledShapeTypes, enabledFla
     library
   );
   const templatesBySignature = new Map(
-    PROGRESSION_TEMPLATES[mode].map((template) => [template.degrees.join('-'), template])
+    (PROGRESSION_TEMPLATES[mode] || []).map((template) => [template.degrees.join('-'), template])
   );
 
   buildFunctionalTemplates(mode, playableDegrees).forEach((template) => {
@@ -459,7 +505,9 @@ function collectFeasiblePlans(state, library) {
   const enabledFlavorOptions = state.enabledFlavorOptions instanceof Set
     ? state.enabledFlavorOptions
     : new Set(state.enabledFlavorOptions);
-  const modes = state.modePreference === 'auto' ? ['major', 'minor'] : [state.modePreference];
+  const modes = state.modePreference === 'auto'
+    ? ['ionian', 'aeolian']
+    : [normalizeMode(state.modePreference || 'ionian')];
   const roots = hasFixedKey(state) ? [state.keyRoot] : listPitchClasses();
 
   const feasiblePlans = [];
@@ -549,7 +597,9 @@ export function rebuildProgression(existingProgression, state, library) {
   const enabledFlavorOptions = state.enabledFlavorOptions instanceof Set
     ? state.enabledFlavorOptions
     : new Set(state.enabledFlavorOptions);
-  const targetMode = state.modePreference === 'auto' ? existingProgression.mode : state.modePreference;
+  const targetMode = state.modePreference === 'auto'
+    ? existingProgression.mode
+    : normalizeMode(state.modePreference || existingProgression.mode);
   const targetRoot = hasFixedKey(state) ? state.keyRoot : existingProgression.keyRoot;
   const strategy = state.rebuildStrategy === 'reharmonize' ? 'reharmonize' : 'preserve';
 
