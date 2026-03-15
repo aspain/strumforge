@@ -1181,7 +1181,7 @@ input[type='radio'] {
 
 .card-chip-row {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   min-width: 0;
   width: 100%;
@@ -1190,6 +1190,12 @@ input[type='radio'] {
 .card-chip-row .theory-chip,
 .card-chip-row .voicing-chip {
   min-width: 0;
+}
+
+.card-chip-row .theory-chip {
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .card-chip-row .voicing-chip {
@@ -2782,7 +2788,9 @@ input[type='range'] {
     --card-stage-width: min(calc(100% - 18px), clamp(156px, 13.6svh, 196px));
     --card-chip-row-height: clamp(13px, 1.15svh, 16px);
     --card-title-row-height: clamp(13px, 1.15svh, 16px);
-    --diagram-top-pull: clamp(4px, 0.45svh, 6px);
+    --card-header-gap: 1px;
+    --card-title-shift-y: 4px;
+    --diagram-top-pull: clamp(7px, 0.7svh, 9px);
     --card-action-gap: clamp(4px, 0.55svh, 6px);
     --card-action-font-size: clamp(8px, 0.72svh, 9px);
     --card-action-padding-block: clamp(4px, 0.45svh, 5px);
@@ -2790,7 +2798,7 @@ input[type='range'] {
   }
 
   .chord-card:not(.empty-state-card) .card-header {
-    padding-bottom: 4px;
+    padding-bottom: 0;
   }
 
   .chord-card h3 {
@@ -2875,7 +2883,9 @@ input[type='range'] {
     --card-stage-width: min(calc(100% - 14px), 168px);
     --card-chip-row-height: 12px;
     --card-title-row-height: 13px;
-    --diagram-top-pull: 3px;
+    --card-header-gap: 1px;
+    --card-title-shift-y: 3px;
+    --diagram-top-pull: 6px;
     --card-action-gap: 4px;
     --card-action-font-size: 8px;
     --card-action-padding-block: 3px;
