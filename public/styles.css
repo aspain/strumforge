@@ -451,6 +451,7 @@ select:focus-visible {
   color: #fff7ef;
   font-weight: 800;
   padding: 8px 14px;
+  touch-action: manipulation;
   transition: none;
 }
 
@@ -482,6 +483,7 @@ select:focus-visible {
   font-weight: 800;
   color: var(--ink);
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .transport-toggle input {
