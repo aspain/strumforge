@@ -4,6 +4,9 @@ import { getPlayableChordChoices } from './chord-library.js';
 export const NO_PLAYABLE_LOOP_WARNING = 'No playable loop with the current chord shapes.';
 export const LOCKED_KEY_CHORD_SHAPES_WARNING = 'That key does not fit your current chord shapes. Try unlocking the key or turning on Barre chords.';
 
+const RANDOM_MODE_PREFERENCES = new Set(['random']);
+const AUTO_MODE_PREFERENCES = new Set(['auto']);
+
 export const PROGRESSION_TEMPLATES = {
   ionian: [
     { degrees: [1, 5, 6, 4], weight: 1.4 },
@@ -498,6 +501,18 @@ function hasFixedKey(state) {
   return Number.isInteger(state?.keyRoot);
 }
 
+function resolvePreferredModes(modePreference) {
+  if (RANDOM_MODE_PREFERENCES.has(modePreference)) {
+    return Object.keys(PROGRESSION_TEMPLATES);
+  }
+
+  if (AUTO_MODE_PREFERENCES.has(modePreference)) {
+    return ['ionian', 'aeolian'];
+  }
+
+  return [normalizeMode(modePreference || 'ionian')];
+}
+
 function collectFeasiblePlans(state, library) {
   const enabledShapeTypes = state.enabledShapeTypes instanceof Set
     ? state.enabledShapeTypes
@@ -505,9 +520,7 @@ function collectFeasiblePlans(state, library) {
   const enabledFlavorOptions = state.enabledFlavorOptions instanceof Set
     ? state.enabledFlavorOptions
     : new Set(state.enabledFlavorOptions);
-  const modes = state.modePreference === 'auto'
-    ? ['ionian', 'aeolian']
-    : [normalizeMode(state.modePreference || 'ionian')];
+  const modes = resolvePreferredModes(state.modePreference);
   const roots = hasFixedKey(state) ? [state.keyRoot] : listPitchClasses();
 
   const feasiblePlans = [];
@@ -597,7 +610,7 @@ export function rebuildProgression(existingProgression, state, library) {
   const enabledFlavorOptions = state.enabledFlavorOptions instanceof Set
     ? state.enabledFlavorOptions
     : new Set(state.enabledFlavorOptions);
-  const targetMode = state.modePreference === 'auto'
+  const targetMode = RANDOM_MODE_PREFERENCES.has(state.modePreference) || AUTO_MODE_PREFERENCES.has(state.modePreference)
     ? existingProgression.mode
     : normalizeMode(state.modePreference || existingProgression.mode);
   const targetRoot = hasFixedKey(state) ? state.keyRoot : existingProgression.keyRoot;

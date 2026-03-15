@@ -2,7 +2,7 @@ import { AudioEngine, GROOVES } from './audio-engine.js';
 import { loadChordLibrary, selectShapeSequence } from './chord-library.js';
 import { renderChordDiagram } from './chord-diagram.js';
 import { getDiagramZoomStartIndex } from './diagram-zoom.js';
-import { getKeyTonicName, getModeDisplayName, listPitchClasses } from './music-theory.js';
+import { getKeyTonicName, getModeDisplayName, listPitchClasses, pitchClassToNote } from './music-theory.js';
 import { moveIndex, moveIndexedValues, moveItem } from './reorder-utils.js';
 import { setScreenWakeEnabled } from './screen-wake.js';
 import { parseCommittedTempo, parseTempoDraft } from './tempo-utils.js';
@@ -16,7 +16,7 @@ import {
 
 const state = {
   keyRoot: null,
-  modePreference: 'ionian',
+  modePreference: 'random',
   enabledShapeTypes: new Set(['open']),
   enabledFlavorOptions: new Set(),
   leftHanded: false,
@@ -65,6 +65,8 @@ let dragSession = null;
 let diagramZoomTrigger = null;
 let diagramZoomGestureSession = null;
 let diagramZoomStepTimer = null;
+let actionControlsLayoutFrame = null;
+let actionControlsLayoutSettledTimer = null;
 const compactActionControlsQuery = typeof window.matchMedia === 'function'
   ? window.matchMedia('(max-width: 1040px)')
   : null;
@@ -75,6 +77,7 @@ const touchInputQuery = typeof window.matchMedia === 'function'
   ? window.matchMedia('(hover: none), (pointer: coarse)')
   : null;
 const MODE_OPTIONS = [
+  { value: 'random', label: 'Random' },
   { value: 'ionian', label: 'Ionian (major)' },
   { value: 'dorian', label: 'Dorian' },
   { value: 'phrygian', label: 'Phrygian' },
@@ -194,13 +197,44 @@ function syncPrimaryActionControlsPlacement() {
   syncPrimaryActionSlotVisibility();
 }
 
-function installActionControlsLayoutSync() {
+function runActionControlsLayoutSync() {
   syncPrimaryActionControlsPlacement();
+  syncProgressionHeaderActionsLayout();
+}
+
+function scheduleActionControlsLayoutSync({ defer = false } = {}) {
+  if (actionControlsLayoutFrame !== null) {
+    window.cancelAnimationFrame(actionControlsLayoutFrame);
+    actionControlsLayoutFrame = null;
+  }
+  if (actionControlsLayoutSettledTimer !== null) {
+    window.clearTimeout(actionControlsLayoutSettledTimer);
+    actionControlsLayoutSettledTimer = null;
+  }
+
+  if (!defer) {
+    runActionControlsLayoutSync();
+  }
+
+  actionControlsLayoutFrame = window.requestAnimationFrame(() => {
+    actionControlsLayoutFrame = window.requestAnimationFrame(() => {
+      actionControlsLayoutFrame = null;
+      runActionControlsLayoutSync();
+    });
+  });
+
+  actionControlsLayoutSettledTimer = window.setTimeout(() => {
+    actionControlsLayoutSettledTimer = null;
+    runActionControlsLayoutSync();
+  }, 180);
+}
+
+function installActionControlsLayoutSync() {
+  scheduleActionControlsLayoutSync();
   if (!compactActionControlsQuery) return;
 
   const handleChange = () => {
-    syncPrimaryActionControlsPlacement();
-    syncProgressionHeaderActionsLayout();
+    scheduleActionControlsLayoutSync({ defer: true });
   };
   if (typeof compactActionControlsQuery.addEventListener === 'function') {
     compactActionControlsQuery.addEventListener('change', handleChange);
@@ -556,6 +590,10 @@ function formatKeyLabel(root, mode) {
 }
 
 function formatKeyRootOption(pitchClass) {
+  if (state.modePreference === 'random' || state.modePreference === 'auto') {
+    return pitchClassToNote(pitchClass);
+  }
+
   return getKeyTonicName(state.modePreference, pitchClass);
 }
 
@@ -1524,17 +1562,21 @@ async function init() {
     syncRhythmControlsFromState();
   }, 0);
   window.addEventListener('resize', () => {
-    syncPrimaryActionControlsPlacement();
-    syncProgressionHeaderActionsLayout();
+    scheduleActionControlsLayoutSync({ defer: true });
+  });
+  window.addEventListener('orientationchange', () => {
+    scheduleActionControlsLayoutSync({ defer: true });
+  });
+  window.visualViewport?.addEventListener('resize', () => {
+    scheduleActionControlsLayoutSync({ defer: true });
   });
 }
 
 window.addEventListener('pageshow', () => {
-  syncPrimaryActionControlsPlacement();
+  scheduleActionControlsLayoutSync({ defer: true });
   syncModeControlFromState();
   syncFlavorControlsFromState();
   syncRhythmControlsFromState();
-  syncProgressionHeaderActionsLayout();
   void restoreTransportAfterBackground();
 });
 

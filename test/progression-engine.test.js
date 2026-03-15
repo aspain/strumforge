@@ -416,6 +416,34 @@ test('rebuildProgression preserves degree sequence while switching mode without 
   );
 });
 
+test('rebuildProgression keeps the current mode when the mode preference is random', async () => {
+  const library = await loadLibrary();
+  const initialState = {
+    keyLocked: true,
+    keyRoot: 7,
+    modePreference: 'dorian',
+    enabledShapeTypes: new Set(['open', 'barre']),
+    enabledFlavorOptions: new Set(['seventh'])
+  };
+  const progression = generateProgression(initialState, library, () => 0);
+
+  const rebuilt = rebuildProgression(
+    progression,
+    {
+      ...initialState,
+      modePreference: 'random'
+    },
+    library
+  );
+
+  assert.equal(rebuilt.warning, '');
+  assert.equal(rebuilt.mode, progression.mode);
+  assert.deepEqual(
+    rebuilt.chords.map((chord) => chord.degree),
+    progression.chords.map((chord) => chord.degree)
+  );
+});
+
 test('rebuildProgression transposes the current progression when the locked key root changes', async () => {
   const library = await loadLibrary();
   const initialState = {
@@ -602,6 +630,30 @@ test('locrian mode can generate a theory-correct diminished tonic loop when tria
     const candidates = getCandidateShapesForChord(chord, library, new Set(['triad']));
     assert.ok(candidates.length > 0, `Expected triad candidates for ${chord.label}`);
   });
+});
+
+test('random mode preference can generate modal progressions beyond major and minor', async () => {
+  const library = await loadLibrary();
+  const state = {
+    keyLocked: false,
+    keyRoot: null,
+    modePreference: 'random',
+    enabledShapeTypes: new Set(['open', 'barre', 'triad', 'power']),
+    enabledFlavorOptions: new Set(['seventh'])
+  };
+
+  const generatedModes = new Set();
+  for (let index = 0; index < 10; index += 1) {
+    const progression = generateProgression(state, library, () => index / 9);
+    generatedModes.add(progression.mode);
+  }
+
+  assert.ok(generatedModes.has('ionian'));
+  assert.ok(generatedModes.has('aeolian'));
+  assert.ok(
+    [...generatedModes].some((mode) => !['ionian', 'aeolian'].includes(mode)),
+    `Expected a non-major/minor mode, received ${[...generatedModes].join(', ')}`
+  );
 });
 
 test('power chord shapes allow 5-chord qualities and playable power shapes', async () => {

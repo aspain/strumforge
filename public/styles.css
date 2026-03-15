@@ -601,12 +601,13 @@ select:focus-visible {
   content: '';
   position: absolute;
   right: calc(var(--control-rail) + 15px);
-  bottom: 18px;
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid rgba(33, 22, 15, 0.78);
-  border-bottom: 2px solid rgba(33, 22, 15, 0.78);
-  transform: rotate(45deg);
+  top: calc(100% - (var(--control-height) / 2));
+  width: 12px;
+  height: 8px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.25 6 6.25l5-5' stroke='%2321160f' stroke-opacity='.78' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transform: translateY(-50%);
   pointer-events: none;
 }
 
@@ -3532,6 +3533,18 @@ input[type='range'] {
   }
 }
 
+@media (orientation: landscape) and (max-width: 860px) and (max-height: 430px) {
+  .key-utility-toggle {
+    gap: 6px;
+    padding-inline: 6px;
+  }
+
+  .key-utility-toggle span {
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+}
+
 @media (max-width: 360px) {
   .key-config-row {
     gap: 2px;
@@ -3546,6 +3559,25 @@ input[type='range'] {
   .key-utility-toggle {
     padding-inline: 4px;
     font-size: 8px;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 380px) {
+  .progression-header-actions .primary-action-controls {
+    gap: 4px;
+  }
+
+  .progression-header-actions .generate-button,
+  .progression-header-actions .transport-button {
+    padding-inline: 5px;
+  }
+
+  .progression-header-actions .generate-button {
+    min-width: 68px;
+  }
+
+  .progression-header-actions .transport-button {
+    min-width: 54px;
   }
 }
 
