@@ -25,6 +25,35 @@ export const PROGRESSION_TEMPLATES = {
   ]
 };
 
+const FUNCTIONAL_TEMPLATE_SKELETONS = {
+  major: [
+    { roles: ['tonic-family', 'predominant', 'dominant-family', 'tonic'], weight: 0.78 },
+    { roles: ['tonic', 'dominant-family', 'predominant', 'tonic'], weight: 0.72 },
+    { roles: ['predominant', 'tonic', 'dominant-family', 'tonic'], weight: 0.68 },
+    { roles: ['tonic', 'predominant', 'tonic', 'dominant-family'], weight: 0.62 },
+    { roles: ['tonic', 'dominant-family', 'tonic', 'predominant'], weight: 0.58 },
+    { roles: ['dominant-family', 'predominant', 'tonic', 'dominant-family'], weight: 0.52 }
+  ],
+  minor: [
+    { roles: ['tonic-family', 'dominant-family', 'tonic-family', 'dominant-family'], weight: 0.78 },
+    { roles: ['tonic-family', 'predominant', 'dominant-family', 'tonic'], weight: 0.72 },
+    { roles: ['tonic-family', 'tonic-color', 'dominant-family', 'tonic-family'], weight: 0.66 },
+    { roles: ['dominant-family', 'tonic-family', 'predominant', 'dominant-family'], weight: 0.6 },
+    { roles: ['tonic', 'predominant', 'tonic-family', 'dominant-family'], weight: 0.56 },
+    { roles: ['tonic-family', 'dominant-family', 'tonic', 'tonic-color'], weight: 0.5 }
+  ]
+};
+
+const DEGREE_PREFERENCE = {
+  1: 1,
+  2: 0.9,
+  3: 0.84,
+  4: 0.94,
+  5: 0.98,
+  6: 0.88,
+  7: 0.8
+};
+
 function weightedPick(items, rng) {
   const total = items.reduce((sum, item) => sum + item.weight, 0);
   let cursor = rng() * total;
@@ -262,6 +291,128 @@ function buildBaseChords(rootPitchClass, mode, template) {
   });
 }
 
+function listPlayableDegrees(rootPitchClass, mode, enabledShapeTypes, enabledFlavorOptions, library) {
+  const playableDegrees = [];
+
+  for (let degree = 1; degree <= 7; degree += 1) {
+    const baseChord = {
+      rootPitchClass,
+      mode,
+      degree,
+      quality: buildChordDefinition(rootPitchClass, mode, degree).quality
+    };
+    const playableChoices = getPlayableChordChoices(
+      buildVariationChoices(baseChord, enabledFlavorOptions, enabledShapeTypes).map(finalizeChord),
+      library,
+      enabledShapeTypes
+    );
+
+    if (!playableChoices.length) continue;
+    playableDegrees.push({
+      degree,
+      functionLabel: buildChordDefinition(rootPitchClass, mode, degree).functionLabel
+    });
+  }
+
+  return playableDegrees;
+}
+
+function buildRoleDegreePools(playableDegrees) {
+  const pools = {
+    tonic: [],
+    'tonic-family': [],
+    'tonic-color': [],
+    predominant: [],
+    'dominant-family': []
+  };
+
+  playableDegrees.forEach(({ degree, functionLabel }) => {
+    if (functionLabel === 'tonic') {
+      pools.tonic.push(degree);
+      pools['tonic-family'].push(degree);
+      return;
+    }
+
+    if (functionLabel === 'tonic color') {
+      pools['tonic-family'].push(degree);
+      pools['tonic-color'].push(degree);
+      return;
+    }
+
+    if (functionLabel === 'predominant') {
+      pools.predominant.push(degree);
+      return;
+    }
+
+    if (functionLabel === 'dominant' || functionLabel === 'dominant color' || functionLabel === 'leading tone') {
+      pools['dominant-family'].push(degree);
+    }
+  });
+
+  return pools;
+}
+
+function buildFunctionalTemplates(mode, playableDegrees) {
+  const templates = [];
+  const pools = buildRoleDegreePools(playableDegrees);
+  const seen = new Set();
+
+  FUNCTIONAL_TEMPLATE_SKELETONS[mode].forEach((skeleton) => {
+    const rolePools = skeleton.roles.map((role) => pools[role] || []);
+    if (rolePools.some((pool) => !pool.length)) return;
+
+    const selectedDegrees = [];
+
+    function visit(roleIndex) {
+      if (roleIndex >= rolePools.length) {
+        if (new Set(selectedDegrees).size < 2) return;
+
+        const signature = selectedDegrees.join('-');
+        if (seen.has(signature)) return;
+        seen.add(signature);
+
+        const degreeWeight = selectedDegrees.reduce((sum, degree) => sum + (DEGREE_PREFERENCE[degree] || 0.75), 0) / selectedDegrees.length;
+        templates.push({
+          degrees: [...selectedDegrees],
+          weight: skeleton.weight * degreeWeight
+        });
+        return;
+      }
+
+      rolePools[roleIndex].forEach((degree) => {
+        selectedDegrees.push(degree);
+        visit(roleIndex + 1);
+        selectedDegrees.pop();
+      });
+    }
+
+    visit(0);
+  });
+
+  return templates;
+}
+
+function listTemplatesForKey(rootPitchClass, mode, enabledShapeTypes, enabledFlavorOptions, library) {
+  const playableDegrees = listPlayableDegrees(
+    rootPitchClass,
+    mode,
+    enabledShapeTypes,
+    enabledFlavorOptions,
+    library
+  );
+  const templatesBySignature = new Map(
+    PROGRESSION_TEMPLATES[mode].map((template) => [template.degrees.join('-'), template])
+  );
+
+  buildFunctionalTemplates(mode, playableDegrees).forEach((template) => {
+    const signature = template.degrees.join('-');
+    if (templatesBySignature.has(signature)) return;
+    templatesBySignature.set(signature, template);
+  });
+
+  return Array.from(templatesBySignature.values());
+}
+
 function buildPlan(rootPitchClass, mode, template, enabledShapeTypes, enabledFlavorOptions, library) {
   const baseChords = buildBaseChords(rootPitchClass, mode, template);
   const resolvedChoices = [];
@@ -314,7 +465,15 @@ function collectFeasiblePlans(state, library) {
   const feasiblePlans = [];
   for (const mode of modes) {
     for (const rootPitchClass of roots) {
-      for (const template of PROGRESSION_TEMPLATES[mode]) {
+      const templates = listTemplatesForKey(
+        rootPitchClass,
+        mode,
+        enabledShapeTypes,
+        enabledFlavorOptions,
+        library
+      );
+
+      for (const template of templates) {
         const plan = buildPlan(rootPitchClass, mode, template, enabledShapeTypes, enabledFlavorOptions, library);
         if (plan) feasiblePlans.push(plan);
       }

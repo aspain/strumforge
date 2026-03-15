@@ -238,6 +238,74 @@ test('open chords plus sevenths makes E major feasible via B7 without changing t
   );
 });
 
+test('open chords plus sevenths offers multiple theory-valid E major loops', async () => {
+  const library = await loadLibrary();
+  const state = {
+    keyLocked: true,
+    keyRoot: 4,
+    modePreference: 'major',
+    enabledShapeTypes: new Set(['open']),
+    enabledFlavorOptions: new Set(['seventh'])
+  };
+
+  const progressions = Array.from({ length: 16 }, (_, index) => (
+    generateProgression(state, library, () => index / 16)
+  ));
+  const signatures = new Set(
+    progressions.map((progression) => progression.chords.map((chord) => chord.id).join('|'))
+  );
+
+  assert.ok(signatures.size > 1, 'Expected more than one E major loop for open chords plus sevenths');
+  assert.ok(signatures.has('E:maj|A:maj|B:7|E:maj'));
+  assert.ok(signatures.has('E:maj|B:7|A:maj|E:maj'));
+});
+
+test('representative shape and flavor combinations provide multiple loops for every feasible key', async () => {
+  const library = await loadLibrary();
+  const configs = [
+    { modePreference: 'major', enabledShapeTypes: new Set(['open']), enabledFlavorOptions: new Set() },
+    { modePreference: 'major', enabledShapeTypes: new Set(['open']), enabledFlavorOptions: new Set(['seventh']) },
+    { modePreference: 'minor', enabledShapeTypes: new Set(['open']), enabledFlavorOptions: new Set() },
+    { modePreference: 'minor', enabledShapeTypes: new Set(['open']), enabledFlavorOptions: new Set(['seventh']) },
+    { modePreference: 'major', enabledShapeTypes: new Set(['barre']), enabledFlavorOptions: new Set() },
+    { modePreference: 'minor', enabledShapeTypes: new Set(['barre']), enabledFlavorOptions: new Set() },
+    { modePreference: 'major', enabledShapeTypes: new Set(['triad']), enabledFlavorOptions: new Set() },
+    { modePreference: 'minor', enabledShapeTypes: new Set(['power']), enabledFlavorOptions: new Set() }
+  ];
+
+  configs.forEach((config) => {
+    const roots = getFeasibleKeyRoots(
+      {
+        keyLocked: false,
+        keyRoot: null,
+        ...config
+      },
+      library
+    );
+
+    roots.forEach((keyRoot) => {
+      const signatures = new Set(
+        Array.from({ length: 32 }, (_, index) => (
+          generateProgression(
+            {
+              keyLocked: true,
+              keyRoot,
+              ...config
+            },
+            library,
+            () => index / 32
+          )
+        )).map((progression) => progression.chords.map((chord) => chord.id).join('|'))
+      );
+
+      assert.ok(
+        signatures.size > 1,
+        `Expected multiple loops for ${config.modePreference} key ${keyRoot} with ${Array.from(config.enabledShapeTypes).join('+')} and ${Array.from(config.enabledFlavorOptions).join('+') || 'no extra flavors'}`
+      );
+    });
+  });
+});
+
 test('open and barre chord shapes generate playable progressions across all keys and modes', async () => {
   const library = await loadLibrary();
 
